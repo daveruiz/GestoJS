@@ -1,4 +1,4 @@
 gestojs
 =======
 
-Gesture lib for mobile developments
+Gesture lib for javascript mobile developments
