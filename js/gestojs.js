@@ -303,8 +303,8 @@
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 3 ), this.points.length - 1 )
-			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 2 ) )
+			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 4 ), this.points.length - 1 )
+			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 3 ) )
 			this.offset = this.getOffset()
 			this.middle = this.getMiddle()
 			this.speed = this.length / this.duration * 1000 // px*s
@@ -377,16 +377,15 @@
 			for (i=2;i<this.points.length;i++) {
 				ca = this.points[ i ].angleTo( this.points[ i-1 ] )
 
-				// -180 to 180 jump fix
-				ca += loop * 360
-				if ( ca - la > 300 ) { loop++; ca+=360 }
-				if ( ca - la < -300 ) { loop--; ca-=360 }
+				// -180 to 180 fix
+				// TODO: Improve this for
+				// multiple 'loops' support
+				if (ca < 0 && la > 0) { ca += 360 }
+				if (ca > 0 && la < 0) { ca -= 360 }
 
 				angle += ca - la
 				la = ca
 			}
-
-			console.log(loop, angle)
 
 			return angle
 		}
@@ -461,7 +460,7 @@
 		 * @return				{number} Distance pixels
 		 */
 		this.distanceTo = function( point ) {
-			return (point.x - this.x)*(point.x - this.x) + (point.y - this.y)*(point.y - this.y)
+			return Math.sqrt( (point.x - this.x)*(point.x - this.x) + (point.y - this.y)*(point.y - this.y) )
 		}
 
 		/**
@@ -555,7 +554,7 @@
 						touches[ touch.identifier ] = touchId++
 
 						// New track
-						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touches[ touch.identifier ] )
+						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
 						tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
 					}
 				}
@@ -611,7 +610,7 @@
 		var endTouch = function( event ) {
 
 			var currentTouches = {}
-			,	i
+			,	i=0
 
 			if ( tracks.length ) {
 
@@ -626,13 +625,13 @@
 
 					// touch up but another touches enabled
 					for (;i<event.touches.length;i++)
-						currentTouches[ touches[ event.touches[ i ].identifier ] ] = true
+						currentTouches[ event.touches[ i ].identifier ] = true
 
 					// End other touches
 					for (i=0;i<tracks.length;i++) {
-						if ( !currentTouches[ touches[ tracks[ i ].identifier ] ] ) {
+						if ( !currentTouches[ touches[ tracks[ i ].id ] ] ) {
 							tracks[ i ].end()
-							delete touches[ tracks[ i ].identifier ]
+							delete touches[ tracks[ i ].id ]
 						}
 					}
 
@@ -665,7 +664,7 @@
 
 			// Reset
 			tracks = []
-			touches = []
+			touches = {}
 			touchId = 0
 			idleTimerId = null
 		}
@@ -981,26 +980,17 @@
 (function (GestoJS) {
 
 	GestoJS.analyzer[ 'swipe' ] = function( angle, threshold ) {
+		var endAngle = this.endAngle
 		angle = parseFloat( angle )
 		threshold = parseFloat( threshold ) || 30
 
-		return Math.abs( this.rotation ) < 30				// not curve
-			&& this.length > 10								// min length
-			&& this.endAngle >= angle-threshold				// defined angle
-			&& this.endAngle <= angle+threshold
-			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
-	}
-
-	GestoJS.analyzer[ 'throw' ] = function( angle, threshold, minSpeed ) {
-		angle = parseFloat( angle )
-		threshold = parseFloat( threshold )
-		minSpeed = parseFloat( minSpeed ) || 5 // px/s
+		if (endAngle < -135) endAngle += 360				// fix for swipe right
+															// (-180 to 180 jump)
 
 		return Math.abs( this.rotation ) < 30				// not curve
-			&& this.length > 10								// min length
-			&& this.endAngle >= angle - threshold			// defined angle
-			&& this.endAngle <= angle + threshold
-			&& this.endSpeed >= minSpeed					// end speed
+			&& this.length > 100							// min length
+			&& endAngle >= angle-threshold					// defined angle
+			&& endAngle <= angle+threshold
 			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
 	}
 
@@ -1027,6 +1017,6 @@
 	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) && swipe(90)' ]
 	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) && swipe(-90)' ]
 
-	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,40) || curve(-360,40)' ]
+	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,40)' ]
 
 })( window.GestoJS )
