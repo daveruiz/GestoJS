@@ -72,7 +72,7 @@
 						touches[ touch.identifier ] = touchId++
 
 						// New track
-						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touches[ touch.identifier ] )
+						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
 						tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
 					}
 				}
@@ -128,7 +128,7 @@
 		var endTouch = function( event ) {
 
 			var currentTouches = {}
-			,	i
+			,	i=0
 
 			if ( tracks.length ) {
 
@@ -143,13 +143,13 @@
 
 					// touch up but another touches enabled
 					for (;i<event.touches.length;i++)
-						currentTouches[ touches[ event.touches[ i ].identifier ] ] = true
+						currentTouches[ event.touches[ i ].identifier ] = true
 
 					// End other touches
 					for (i=0;i<tracks.length;i++) {
-						if ( !currentTouches[ touches[ tracks[ i ].identifier ] ] ) {
+						if ( !currentTouches[ touches[ tracks[ i ].id ] ] ) {
 							tracks[ i ].end()
-							delete touches[ tracks[ i ].identifier ]
+							delete touches[ tracks[ i ].id ]
 						}
 					}
 
@@ -182,7 +182,7 @@
 
 			// Reset
 			tracks = []
-			touches = []
+			touches = {}
 			touchId = 0
 			idleTimerId = null
 		}
