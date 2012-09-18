@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Single gesture track model
  *

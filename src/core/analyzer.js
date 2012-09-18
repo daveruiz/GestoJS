@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Gesture analyzer module
  * TODO: Use workers

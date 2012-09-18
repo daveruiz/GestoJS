@@ -1,3 +1,10 @@
+/**
+ * GestoJS
+ * Touch analyzers
+ *
+ * @autor David Ruiz | david@daveruiz.net
+ */
+
 (function (GestoJS) {
 
 	GestoJS.analyzer['tap'] = function( minDuration, maxDuration ) {

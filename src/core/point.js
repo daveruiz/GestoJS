@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Point model
  *

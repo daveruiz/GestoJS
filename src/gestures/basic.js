@@ -1,3 +1,10 @@
+/**
+ * GestoJS
+ * Some predefined gestures
+ *
+ * @autor David Ruiz | david@daveruiz.net
+ */
+
 (function (GestoJS) {
 
 	GestoJS.gesture[ 'tap' ]				= [ 'tap()' ]

@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Gesture tracker module
  * TODO: Optimize for IOS. Now only works with Android

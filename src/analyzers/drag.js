@@ -1,3 +1,10 @@
+/**
+ * GestoJS
+ * Drag movements analyzers
+ *
+ * @autor David Ruiz | david@daveruiz.net
+ */
+
 (function (GestoJS) {
 
 	GestoJS.analyzer[ 'swipe' ] = function( angle, threshold ) {

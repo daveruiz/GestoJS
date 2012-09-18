@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Base class
  *

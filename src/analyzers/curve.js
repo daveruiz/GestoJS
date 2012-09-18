@@ -1,3 +1,10 @@
+/**
+ * GestoJS
+ * Curve analyzers
+ *
+ * @autor David Ruiz | david@daveruiz.net
+ */
+
 (function (GestoJS) {
 
 	GestoJS.analyzer[ 'curve' ] = function( angle, threshold ) {

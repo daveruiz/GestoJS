@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Events and Event model
  *

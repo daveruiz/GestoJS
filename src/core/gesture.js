@@ -1,4 +1,4 @@
-/*
+/**
  * GestoJS
  * Gesture model (unused at this moment)
  *
