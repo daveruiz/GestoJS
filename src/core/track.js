@@ -110,7 +110,7 @@
 		 * @return				{number} Similarity (between 0-1)
 		 */
 		this.analyze = function( analyzer, args ) {
-			return GestoJs.analyzer[ analyzer ].apply( this, args )
+			return GestoJS.analyzer[ analyzer ].apply( this, args )
 		}
 
 	}
