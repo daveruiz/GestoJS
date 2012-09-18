@@ -159,7 +159,7 @@
 		var args = [ '[GestoJS]' ], i = 0
 		if (GestoJS.debug && typeof window.console.error === 'function') {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
-			window.console.error.apply( window.console, args )
+			window.console.error.call( window.console, args.join(' ') )
 		}
 	}
 
@@ -171,7 +171,7 @@
 		var args = [ '[GestoJS]' ], i = 0
 		if (GestoJS.debug && typeof window.console.log === 'function') {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
-			window.console.log.apply( window.console, args )
+			window.console.log.call( window.console, args.join(' ') )
 		}
 	}
 
@@ -183,7 +183,7 @@
 		var args = [ '[GestoJS]' ], i = 0
 		if (GestoJS.debug && typeof window.console.warn === 'function') {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
-			window.console.warn.apply( window.console, args )
+			window.console.warn.call( window.console, args.join(' ') )
 		}
 	}
 

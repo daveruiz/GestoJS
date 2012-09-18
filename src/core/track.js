@@ -37,7 +37,9 @@
 
 			sumX += point.x - this.points[0].x
 			sumY += point.y - this.points[0].y
-			this.length += point.distanceTo( this.points[ this.points.length - 2 ])
+
+			if ( this.points.length > 1 )
+				this.length += point.distanceTo( this.points[ this.points.length - 2 ])
 		}
 
 		/**
@@ -50,7 +52,6 @@
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-			this.length = this.getLength()
 			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 3 ), this.points.length - 1 )
 			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 2 ) )
 			this.offset = this.getOffset()

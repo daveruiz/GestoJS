@@ -15,6 +15,8 @@
 		var tracker = this
 		,	listeners = {}
 		,	tracks = []
+		,	touches = {}
+		,	touchId = 0
 		,	touchable = GestoJS.util.isTouchableDevice()
 		,	idleTimerId
 
@@ -65,19 +67,20 @@
 			}
 
 			if ( touchable ) {
+
 				for (;i<event.touches.length;i++) {
 					touch = event.touches[ i ]
 
-					if (tracks[ touch.identifier ] && tracks[ touch.identifier ].endTime ) {
-						// previously finished track with same id.
-						// so, search next free id for old track
-						while( tracks[ tracks[ touch.identifier ].id ] ) tracks[ touch.identifier ].id++
-						tracks[ tracks[ touch.identifier ].id ] = tracks[ touch.identifier ]
-					}
+				    // If no touch active with current identifier
+					// create new touch
+				    if ( touches[ touch.identifier ] === undefined ) {
 
-					// New track
-					tracks[ touch.identifier ] = new GestoJS.core.Track( touch.identifier )
-					tracks[ touch.identifier ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
+						touches[ touch.identifier ] = touchId++
+
+						// New track
+						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touches[ touch.identifier ] )
+						tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
+					}
 				}
 			} else {
 				tracks.push( new GestoJS.core.Track( tracks.length ) )
@@ -108,8 +111,8 @@
 					for (;i<event.touches.length;i++) {
 						touch = event.touches[ i ]
 
-						if (tracks[ touch.identifier ]) {
-							tracks[ touch.identifier ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
+						if (tracks[ touches[ touch.identifier ] ]) {
+							tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
 						} else {
 							// something went wrong
 							GestoJS.err( "Fixme! Attemp to move unstarted touch !?")
@@ -146,12 +149,13 @@
 
 					// touch up but another touches enabled
 					for (;i<event.touches.length;i++)
-						currentTouches[ event.touches[ i ].identifier ] = true
+						currentTouches[ touches[ event.touches[ i ].identifier ] ] = true
 
 					// End other touches
 					for (i=0;i<tracks.length;i++) {
-						if ( !currentTouches[ tracks[ i ].identifier ] ) {
+						if ( !currentTouches[ touches[ tracks[ i ].identifier ] ] ) {
 							tracks[ i ].end()
+							delete touches[ tracks[ i ].identifier ]
 						}
 					}
 
@@ -182,7 +186,10 @@
 
 			dispatch( GestoJS.event.ON_TRACK_COMPLETE, { 'tracks' : tracks, 'originalEvent' : null } );
 
+			// Reset
 			tracks = []
+			touches = []
+			touchId = 0
 			idleTimerId = null
 		}
 
