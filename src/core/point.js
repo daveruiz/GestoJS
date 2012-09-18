@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Point model
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Point model */
 
 (function( GestoJS ) {
 

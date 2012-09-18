@@ -1,10 +1,4 @@
-/**
- * GestoJS
- * Gesture analyzer module
- * TODO: Use workers
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Gesture analyzer module (TODO: Use workers) */
 
 (function( GestoJS ) {
 
@@ -17,11 +11,10 @@
 
 		/**
 		 * Dispatch an event. (Still unused, waiting for workers)
-		 * @param event			{GestoJS.event.Event} Event to dispatch
+		 * @param eventType		{GestoJS.event.Event} Event to dispatch
 		 */
 		var dispatch = function( eventType, data ) {
-			var i=0
-			,	event
+			var i=0, event
 
 			if ( !listeners[ eventType ] ) return
 
@@ -132,7 +125,7 @@
 						,	ruleMatch											// rule result
 
 						// analyzer value ( between 0 and 1 )
-						ruleMatch = GestoJS.analyzer[ fn ].apply( steps[ step ].tracks[ rule ], args )
+						ruleMatch = steps[ step ].tracks[ rule ].analyze( fn, args )
 
 						// if not match, mark to break
 						if (!ruleMatch) breakstep = true

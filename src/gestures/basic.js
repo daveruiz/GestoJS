@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Some predefined gestures
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Some predefined gestures */
 
 (function (GestoJS) {
 

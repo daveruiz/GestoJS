@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Curve analyzers
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Curve analyzers */
 
 (function (GestoJS) {
 

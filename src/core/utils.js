@@ -1,9 +1,4 @@
-/*
- * GestoJS
- * Utils module
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Utils module */
 
 (function( GestoJS ) {
 

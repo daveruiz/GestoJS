@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Base class
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Base class */
 
 (function() {
 

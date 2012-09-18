@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Drag movements analyzers
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Linear movements analyzers */
 
 (function (GestoJS) {
 

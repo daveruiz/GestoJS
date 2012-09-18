@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Events and Event model
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Events and Event model */
 
 (function( GestoJS ) {
 

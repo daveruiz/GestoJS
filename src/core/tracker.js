@@ -1,10 +1,4 @@
-/**
- * GestoJS
- * Gesture tracker module
- * TODO: Optimize for IOS. Now only works with Android
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Gesture tracker module */
 
 (function( GestoJS ) {
 
@@ -27,16 +21,16 @@
 
 			if ( touchable ) {
 
-				target.addEventListener( 'touchstart', startTouch )
-				window.addEventListener( 'touchmove', moveTouch )
-				window.addEventListener( 'touchend', endTouch )
+				target.addEventListener( 'touchstart', startTouch, false )
+				window.addEventListener( 'touchmove', moveTouch, false )
+				window.addEventListener( 'touchend', endTouch, false )
 
 			} else {
 
 				// Desktop support
-				target.addEventListener( 'mousedown', startTouch )
-				window.addEventListener( 'mousemove', moveTouch )
-				window.addEventListener( 'mouseup', endTouch )
+				target.addEventListener( 'mousedown', startTouch, false )
+				window.addEventListener( 'mousemove', moveTouch, false )
+				window.addEventListener( 'mouseup', endTouch, false )
 
 			}
 

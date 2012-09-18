@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Touch analyzers
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Touch analyzers */
 
 (function (GestoJS) {
 

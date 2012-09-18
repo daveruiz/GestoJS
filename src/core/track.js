@@ -1,9 +1,4 @@
-/**
- * GestoJS
- * Single gesture track model
- *
- * @autor David Ruiz | david@daveruiz.net
- */
+/** GestoJS - Single gesture track model */
 
 (function( GestoJS ) {
 
@@ -115,7 +110,7 @@
 		 * @return				{number} Similarity (between 0-1)
 		 */
 		this.analyze = function( analyzer, args ) {
-			return GestoJs.analyzers[ analyzer ].apply( this, args )
+			return GestoJs.analyzer[ analyzer ].apply( this, args )
 		}
 
 	}
