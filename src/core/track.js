@@ -19,7 +19,9 @@
 		this.speed = null
 		this.endSpeed = null
 		this.length = 0
-		this.angle = null
+		this.rotation = null
+		this.startAngle = null
+		this.endAngle = null
 		this.offset = null
 		this.middle = null
 
@@ -47,12 +49,15 @@
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 3 ), this.points.length - 1 )
-			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 2 ) )
+			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 4 ), this.points.length - 1 )
+			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 3 ) )
 			this.offset = this.getOffset()
 			this.middle = this.getMiddle()
 			this.speed = this.length / this.duration * 1000 // px*s
 			this.endSpeed = this.getSpeed()
+
+			// rotational angle calcs
+			this.rotation = this.getRotation()
 
 		}
 
@@ -101,6 +106,34 @@
 			return this.points[ this.points.length - 1 ].distanceTo( this.points[ Math.max( 0, this.points.length - 2 ) ] )
 				   / ( this.points[ this.points.length - 1 ].time - this.points[ Math.max( 0, this.points.length - 2 ) ].time )
 				   / 1000
+		}
+
+		/**
+		 * Get rotational angle
+		 * @return				{number} rotation
+		 */
+		this.getRotation = function() {
+			var i, angle = 0, la, ca, loop = 0
+
+			// no angle
+			if (this.points.length <= 2) return 0
+
+			la = this.points[1].angleTo( this.points[0] )
+
+			for (i=2;i<this.points.length;i++) {
+				ca = this.points[ i ].angleTo( this.points[ i-1 ] )
+
+				// -180 to 180 fix
+				// TODO: Improve this for
+				// multiple 'loops' support
+				if (ca < 0 && la > 0) { ca += 360 }
+				if (ca > 0 && la < 0) { ca -= 360 }
+
+				angle += ca - la
+				la = ca
+			}
+
+			return angle
 		}
 
 		/**

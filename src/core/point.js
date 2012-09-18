@@ -18,7 +18,7 @@
 		 * @return				{number} Distance pixels
 		 */
 		this.distanceTo = function( point ) {
-			return (point.x - this.x)*(point.x - this.x) + (point.y - this.y)*(point.y - this.y)
+			return Math.sqrt( (point.x - this.x)*(point.x - this.x) + (point.y - this.y)*(point.y - this.y) )
 		}
 
 		/**

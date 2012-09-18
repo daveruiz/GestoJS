@@ -3,26 +3,17 @@
 (function (GestoJS) {
 
 	GestoJS.analyzer[ 'swipe' ] = function( angle, threshold ) {
+		var endAngle = this.endAngle
 		angle = parseFloat( angle )
 		threshold = parseFloat( threshold ) || 30
 
-		return !GestoJS.analyzer.curve.call( this )			// not curve
-			&& this.length > 10								// min length
-			&& this.endAngle >= angle-threshold				// defined angle
-			&& this.endAngle <= angle+threshold
-			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
-	}
+		if (endAngle < -135) endAngle += 360				// fix for swipe right
+															// (-180 to 180 jump)
 
-	GestoJS.analyzer[ 'throw' ] = function( angle, threshold, minSpeed ) {
-		angle = parseFloat( angle )
-		threshold = parseFloat( threshold )
-		minSpeed = parseFloat( minSpeed ) || 5 // px/s
-
-		return !GestoJS.analyzer.curve.call( this )			// not curve
-			&& this.length > 10								// min length
-			&& this.endAngle >= angle - threshold			// defined angle
-			&& this.endAngle <= angle + threshold
-			&& this.endSpeed >= minSpeed					// end speed
+		return Math.abs( this.rotation ) < 30				// not curve
+			&& this.length > 100							// min length
+			&& endAngle >= angle-threshold					// defined angle
+			&& endAngle <= angle+threshold
 			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
 	}
 

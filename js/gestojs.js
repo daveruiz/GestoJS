@@ -273,7 +273,9 @@
 		this.speed = null
 		this.endSpeed = null
 		this.length = 0
-		this.angle = null
+		this.rotation = null
+		this.startAngle = null
+		this.endAngle = null
 		this.offset = null
 		this.middle = null
 
@@ -307,6 +309,9 @@
 			this.middle = this.getMiddle()
 			this.speed = this.length / this.duration * 1000 // px*s
 			this.endSpeed = this.getSpeed()
+
+			// rotational angle calcs
+			this.rotation = this.getRotation()
 
 		}
 
@@ -355,6 +360,35 @@
 			return this.points[ this.points.length - 1 ].distanceTo( this.points[ Math.max( 0, this.points.length - 2 ) ] )
 				   / ( this.points[ this.points.length - 1 ].time - this.points[ Math.max( 0, this.points.length - 2 ) ].time )
 				   / 1000
+		}
+
+		/**
+		 * Get rotational angle
+		 * @return				{number} rotation
+		 */
+		this.getRotation = function() {
+			var i, angle = 0, la, ca, loop = 0
+
+			// no angle
+			if (this.points.length <= 2) return 0
+
+			la = this.points[1].angleTo( this.points[0] )
+
+			for (i=2;i<this.points.length;i++) {
+				ca = this.points[ i ].angleTo( this.points[ i-1 ] )
+
+				// -180 to 180 jump fix
+				ca += loop * 360
+				if ( ca - la > 300 ) { loop++; ca+=360 }
+				if ( ca - la < -300 ) { loop--; ca-=360 }
+
+				angle += ca - la
+				la = ca
+			}
+
+			console.log(loop, angle)
+
+			return angle
 		}
 
 		/**
@@ -908,7 +942,7 @@
 
 	GestoJS.analyzer['tap'] = function( minDuration, maxDuration ) {
 		minDuration = parseInt( minDuration, 10 ) || 0
-		maxDuration = parseInt( maxDuration, 10 ) || 200
+		maxDuration = parseInt( maxDuration, 10 ) || 400
 
 		return this.length < 5							// max length
 			&& this.duration >= minDuration				// defined duration
@@ -917,7 +951,7 @@
 	}
 
 	GestoJS.analyzer['longTap'] = function( minDuration ) {
-		minDuration = parseInt( minDuration, 10 ) || 800
+		minDuration = parseInt( minDuration, 10 ) || 400
 
 		return this.length < 5							// max legth
 			&& this.duration >= minDuration				// defined duration
@@ -934,9 +968,11 @@
 		angle = typeof angle !== 'undefined' ? parseFloat( angle ) : null
 		threshold = parseFloat( threshold ) || 30
 
-		return Math.abs( this.startAngle - this.endAngle ) > 5		// min angle
-			&& ( angle === undefined || ( ( a = this.endAngle - this.startAngle ) <= angle + threshold && a >= angle - threshold ) ) // defined angle
-			 ? 1 - Math.abs( a - angle ) / (threshold*2) : 0
+		return this.rotation >= angle-threshold
+			&& this.rotation <= angle+threshold
+			&& this.length > 20
+			 ? 1 - Math.abs(angle - this.rotation) / (threshold*2)
+			 : 0
 	}
 
 })( window.GestoJS )
@@ -948,7 +984,7 @@
 		angle = parseFloat( angle )
 		threshold = parseFloat( threshold ) || 30
 
-		return !GestoJS.analyzer.curve.call( this )			// not curve
+		return Math.abs( this.rotation ) < 30				// not curve
 			&& this.length > 10								// min length
 			&& this.endAngle >= angle-threshold				// defined angle
 			&& this.endAngle <= angle+threshold
@@ -960,7 +996,7 @@
 		threshold = parseFloat( threshold )
 		minSpeed = parseFloat( minSpeed ) || 5 // px/s
 
-		return !GestoJS.analyzer.curve.call( this )			// not curve
+		return Math.abs( this.rotation ) < 30				// not curve
 			&& this.length > 10								// min length
 			&& this.endAngle >= angle - threshold			// defined angle
 			&& this.endAngle <= angle + threshold
@@ -977,18 +1013,20 @@
 	GestoJS.gesture[ 'twoTap' ]				= [ 'tap()', 'tap()' ]
 	GestoJS.gesture[ 'longTap' ]			= [ 'longTap()' ]
 	GestoJS.gesture[ 'twoTapLong']			= [ 'tap()', 'longTap()' ]
-	GestoJS.gesture[ 'doubleTap' ]			= [ 'tap() + tap()' ]
+	GestoJS.gesture[ 'doubleTap' ]			= [ 'tap() && tap()' ]
 	GestoJS.gesture[ 'doubleLongTap' ]		= [ 'longTap() + longTap()' ]
-	GestoJS.gesture[ 'twoDoubleTap' ]		= [ 'tap() + tap()', 'tap() + tap()' ]
+	GestoJS.gesture[ 'twoDoubleTap' ]		= [ 'tap() && tap()', 'tap() && tap()' ]
 
 	GestoJS.gesture[ 'swipeLeft' ]			= [ 'swipe(0)' ]
 	GestoJS.gesture[ 'swipeRight' ]			= [ 'swipe(180)' ]
 	GestoJS.gesture[ 'swipeUp' ]			= [ 'swipe(90)' ]
 	GestoJS.gesture[ 'swipeDown' ]			= [ 'swipe(-90)' ]
 
-	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'swipe(0) + swipe(0)' ]
-	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'swipe(180) + swipe(180)' ]
-	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) + swipe(90)' ]
-	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) + swipe(-90)' ]
+	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'swipe(0) && swipe(0)' ]
+	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'swipe(180) && swipe(180)' ]
+	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) && swipe(90)' ]
+	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) && swipe(-90)' ]
+
+	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,40) || curve(-360,40)' ]
 
 })( window.GestoJS )
