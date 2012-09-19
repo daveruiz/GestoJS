@@ -6,8 +6,57 @@
 
 	var Track = function( id ) {
 
-		var sumX = 0
+		var track = this
+		,	sumX = 0
 		,	sumY = 0
+		,	lastRot = null
+		,	lastAng = null
+		,	loops = 0
+
+		var updateCalcs = function() {
+			var curRot, curAng
+			,	prevPoint = track.points.length > 1 ? track.points[ Math.max( 0, track.points.length - 2 ) ] : null
+			,	lastPoint = track.points[ track.points.length - 1 ]
+
+			// Speed
+			track.speed = track.length / track.duration * 1000 // px*s
+
+			// Offset
+			track.offset = track.getOffset()
+
+			// Middle point
+			sumX += lastPoint.x
+			sumY += lastPoint.y
+			track.middle = track.getMiddle()
+
+			if ( prevPoint ) {
+				// Length
+				track.length += lastPoint.distanceTo( prevPoint )
+
+				// Rotation
+				curAng = lastPoint.angleTo( prevPoint )
+
+				if (lastAng > 90 && curAng < -90) loops++; // detect clockwise loop
+				if (lastAng < -90 && curAng > 90) loops--; // detect anticlockwise loop
+				curRot = curAng + loops*360
+				if ( lastRot !== null ) track.rotation += curRot - lastRot
+
+				lastRot = curRot
+				lastAng = curAng
+
+				// Loops (offset corrected)
+				track.loops = Math.floor( track.rotation / 360 ) + ( track.rotation < 0 ? 1 : 0 )
+
+				// Angle
+				track.endAngle = track.getAngle( Math.max( 0, track.points.length - 4 ), track.points.length - 1 )
+				track.startAngle = track.getAngle( 0, Math.min( track.points.length - 1, 3 ) )
+
+				// Speed
+				track.endSpeed = track.getSpeed()
+			}
+		}
+
+		/* Public vars */
 
 		this.id = id
 		this.points = []
@@ -15,28 +64,27 @@
 		this.startTime = new Date().getTime()
 		this.endTime = null
 
-		this.duration = null
-		this.speed = null
-		this.endSpeed = null
+		this.duration = 0
+		this.speed = 0
+		this.endSpeed = 0
 		this.length = 0
-		this.rotation = null
-		this.startAngle = null
-		this.endAngle = null
+		this.rotation = 0
+		this.startAngle = 0
+		this.endAngle = 0
 		this.offset = null
 		this.middle = null
+		this.loops = 0
+
+		/* Public methods */
 
 		/**
 		 * Add point. Do not add to points array directly!
 		 * @param point			{Object|GestoJS.core.Point} Point object
 		 */
 		this.push = function( point ) {
+			// Add point
 			this.points.push( point )
-
-			sumX += point.x - this.points[0].x
-			sumY += point.y - this.points[0].y
-
-			if ( this.points.length > 1 )
-				this.length += point.distanceTo( this.points[ this.points.length - 2 ])
+			updateCalcs()
 		}
 
 		/**
@@ -49,15 +97,8 @@
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 4 ), this.points.length - 1 )
-			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 3 ) )
-			this.offset = this.getOffset()
-			this.middle = this.getMiddle()
-			this.speed = this.length / this.duration * 1000 // px*s
-			this.endSpeed = this.getSpeed()
 
-			// rotational angle calcs
-			this.rotation = this.getRotation()
+			console.log( this.rotation, this.loops )
 
 		}
 
@@ -106,34 +147,6 @@
 			return this.points[ this.points.length - 1 ].distanceTo( this.points[ Math.max( 0, this.points.length - 2 ) ] )
 				   / ( this.points[ this.points.length - 1 ].time - this.points[ Math.max( 0, this.points.length - 2 ) ].time )
 				   / 1000
-		}
-
-		/**
-		 * Get rotational angle
-		 * @return				{number} rotation
-		 */
-		this.getRotation = function() {
-			var i, angle = 0, la, ca, loop = 0
-
-			// no angle
-			if (this.points.length <= 2) return 0
-
-			la = this.points[1].angleTo( this.points[0] )
-
-			for (i=2;i<this.points.length;i++) {
-				ca = this.points[ i ].angleTo( this.points[ i-1 ] )
-
-				// -180 to 180 fix
-				// TODO: Improve this for
-				// multiple 'loops' support
-				if (ca < 0 && la > 0) { ca += 360 }
-				if (ca > 0 && la < 0) { ca -= 360 }
-
-				angle += ca - la
-				la = ca
-			}
-
-			return angle
 		}
 
 		/**

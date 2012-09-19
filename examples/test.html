@@ -54,6 +54,14 @@
 					}
 					gfx.stroke()
 
+					// angke draw
+					gfx.beginPath()
+					gfx.strokeStyle = "#ff0000"
+					gfx.moveTo( tracks[ i ].middle.x, tracks[ i ].middle.y )
+					gfx.lineTo( tracks[ i ].middle.x + Math.cos( tracks[ i ].rotation / 180 * Math.PI ) * 100
+							  , tracks[ i ].middle.y + Math.sin( tracks[ i ].rotation / 180 * Math.PI ) * 100 )
+					gfx.stroke()
+
 				}
 
 			}
