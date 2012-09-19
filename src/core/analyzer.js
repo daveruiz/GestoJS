@@ -79,11 +79,12 @@
 		this.analyze = function( tracks, gestures ) {
 			var gesture									// gesture reference object for analyzers
 			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
-			,	matches = []							// array of matching gestures
+			,	matches = []							// array of matching gestures index
+			,	steps = buildSteps( tracks )			// steps of tracks recorded
+			,	step									// current step
 			,	match									// match points counter of current gesture
 			,	smatch									// match points counter of current step
-			,	step									// current step index
-			,	steps = buildSteps( tracks )			// steps of tracks recorded
+			,	tmatch									// match points counter of current track
 			,	gname									// current gesture gesture name
 			,	gsteps									// current gesture steps
 			,	gstr									// current gesture step string to eval
@@ -125,7 +126,7 @@
 					smatch = 0
 
 					// loop in tracks
-					for (track=0, trl=Math.min(ntracks,ngtracks); track<trl; track++) {
+					for (track=0; track<ntracks; track++) {
 
 						nrules = 0
 
@@ -145,19 +146,30 @@
 								fn = analyzer.match( /^([^\(]+)/ )[1]				// rule name
 								args = analyzer.match( /\(([^\)]*)/)[1].split(',')	// arguments
 							} catch( err ) {
-								GestoJS.err('Parsing error in "' + analyzer + '"')
+								GestoJS.err('Parsing error in "' + analyzer + '": '+err.toString())
 								return 0
 							}
 
 							// analyzer value ( between 0 and 1 )
+							if ( !GestoJS.analyzer[ fn ] ) {
+								GestoJS.err('Undefined analyzer "' + fn + '"')
+								return 0
+							}
+
 							ruleMatch = steps[ step ].tracks[ track ].analyze( fn, [ gesture ].concat( args ) )
 							nrules++			// increment rule counter
 
 							return ruleMatch
 						})
 
-						// add result to lcoal step match counter
-						smatch += eval( gtracks[ track ] )
+						if ( !(tmatch = eval( gtracks[ track ] ) ) ) {
+							// track eval not passed
+							smatch = 0
+							break
+						}
+
+						// add result to local step match counter
+						smatch += tmatch / nrules
 
 					}
 
@@ -169,7 +181,7 @@
 					}
 
 					// add to gesture match points
-					match += smatch / nrules
+					match += smatch / ntracks
 				}
 
 				// if match, save current gesture
@@ -177,7 +189,7 @@
 					// Save gesture
 					matches.push({
 						'name'		: gname
-					,	'points'	: match / ngtracks
+					,	'points'	: match / gsteps.length
 					})
 				}
 

@@ -22,12 +22,28 @@
 		}
 
 		/**
-		 * Calculates angle to other point
+		 * Calculates angle with other point
 		 * @param point			{Object|GestoJS.core.Point} Point object
 		 * @return				{number} Angle in degrees
 		 */
 		this.angleTo = function( point ) {
 			return Math.atan2( point.y - this.y, point.x - this.x ) / Math.PI * 180
+		}
+
+		/**
+		 * Calculates angle with axis
+		 * @return				{number} Angle in degrees
+		 */
+		this.angle = function() {
+			return (new GestoJS.core.Point(0,0)).angleTo( this )
+		}
+
+		/**
+		 * Return inverted point
+		 * @return				{GestoJS.core.Point}
+		 */
+		this.invert = function() {
+			return new GestoJS.core.Point( -this.x, -this.y, size, force )
 		}
 
 	}
