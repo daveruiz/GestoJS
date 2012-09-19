@@ -2,9 +2,9 @@
 
 (function (GestoJS) {
 
-	GestoJS.analyzer[ 'curve' ] = function( angle, threshold ) {
+	GestoJS.analyzer[ 'arc' ] = function( angle, threshold ) {
 		var a
-		angle = typeof angle !== 'undefined' ? parseFloat( angle ) : null
+		angle = angle !== undefined ? parseFloat( angle ) : null
 		threshold = parseFloat( threshold ) || 30
 
 		return this.rotation >= angle-threshold
@@ -14,8 +14,19 @@
 			 : 0
 	}
 
+	GestoJS.analyzer[ 'circle' ] = function( threshold ) {
+		var i, ii, maxDistance = 0, minDistance = Number.MAX_VALUE
+		threshold = threshold || .8
+		for (i=0,ii=this.points.length;i<ii;i++) {
+			maxDistance = Math.max( maxDistance, this.points[i].distanceTo( this.middle ) )
+			minDistance = Math.min( minDistance, this.points[i].distanceTo( this.middle ) )
+		}
+
+		return Math.max( 0, threshold - (maxDistance - minDistance) / maxDistance )
+	}
+
 	GestoJS.analyzer[ 'loop' ] = function( count ) {
-		return this.loops == ( count || 1 ) ? 1 : 0
+		return Math.abs( this.loops ) === ( count || 1 ) ? 1 : 0
 	}
 
 })( window.GestoJS )

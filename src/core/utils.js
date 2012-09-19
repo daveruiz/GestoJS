@@ -7,28 +7,21 @@
 	var Utils = {}
 
 	/**
-	 * Get type of event. (still unused)
-	 * @return			{string} type
-	 */
-	Utils.getEventType = function( eventString ) {
-		return eventString.split('.').shift()
-	}
-
-	/**
-	 * Get namespace of event. (still unused)
-	 * @return			{string} namespace
-	 */
-	Utils.getEventNamespace = function( eventString ) {
-		return eventString.split('.').length > 1 ? eventString.split('.').slice(1).join('.') : ''
-	}
-
-	/**
 	 * Detect if device is touchable
-	 * @return			{boolean}
+	 * @return {boolean}
 	 */
 	Utils.isTouchableDevice = function() {
 		return !!('ontouchstart' in window);
 	}
+
+	/**
+	 * Return if something is a function
+	 * @return {boolean}
+	 */
+	Utils.isFunction = function( fn ) {
+		return !!(typeof fn === 'function')
+	}
+
 
 	// Became public
 	GestoJS.util = Utils

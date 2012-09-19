@@ -12,7 +12,6 @@
 	Events.ON_TRACK_START = "onTrackStart"
 	Events.ON_TRACK_COMPLETE = "onTrackComplete"
 
-
 	/**
 	 * Event model
 	 * @param type		{string} event type

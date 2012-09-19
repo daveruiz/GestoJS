@@ -91,15 +91,11 @@
 		 * Finalize track, doing some precalcs
 		 */
 		this.end = function() {
-
 			if (this.endTime) return
 
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-
-			console.log( this.rotation, this.loops )
-
 		}
 
 		/**

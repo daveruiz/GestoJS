@@ -84,13 +84,14 @@
 			,	cmatch
 			,	step
 			,	steps = buildSteps( tracks )
-			,	ntracks
 			,	gname
 			,	gsteps
 			,	gstr
 			,	breakstep
-			,	rule
 			,	nrules
+			,	gtracks
+			,	ngtracks
+			,	tr
 
 			for (gname in gestures) {
 
@@ -103,48 +104,64 @@
 				}
 
 				match = 0	// total gesture match points
-				nrules = 0	// rules counter, for match points normalize
 
 				// Check step by step if gesture matches
 				for (step=0; step<gsteps.length; step++) {
 
 					gstr = gsteps[ step ]	// current step in gesture
-					rule=0					// current rule in step
 					breakstep = false		// if step breaked by unmatched rule
 
+					// group rules in tracks
+					gtracks = gstr.split( /&&/g )
+					ngtracks = gtracks.length
+
 					// if number of tracks expected are different abort current gesture, abort
-					if ( gstr.match( ruleRe ).length !== steps[ step ].tracks.length ) {
+					if ( ngtracks !== steps[ step ].tracks.length ) {
 						match = 0
 						break
 					}
 
-					// Replace each rule by match result
-					gstr = gstr.replace( ruleRe, function( analyzer ) {
-						var fn = analyzer.match( /^([^\(]+)/ )[1]				// rule name
-						,	args = analyzer.match( /\(([^\)]*)/)[1].split(',')	// arguments
-						,	ruleMatch											// rule result
+					// local step match counter
+					cmatch = 0
 
-						// analyzer value ( between 0 and 1 )
-						ruleMatch = steps[ step ].tracks[ rule ].analyze( fn, args )
+					// loop in tracks
+					for (tr=0; tr<ngtracks; tr++) {
 
-						// if not match, mark to break
-						if (!ruleMatch) breakstep = true
+						nrules = 0
 
-						nrules++	// increment rule counter
-						rule++		// next rule
+						// Replace each rule by match result
+						gtracks[ tr ] = gtracks[ tr ].replace( ruleRe, function( analyzer ) {
+							var fn, args, ruleMatch
 
-						return ruleMatch
-					})
+							try {
+								fn = analyzer.match( /^([^\(]+)/ )[1]				// rule name
+								args = analyzer.match( /\(([^\)]*)/)[1].split(',')	// arguments
+							} catch( err ) {
+								GestoJS.err('Parsing error in "' + analyzer + '"')
+								return 0
+							}
 
-					// Evalue step
-					if ( breakstep || !( cmatch = eval( gstr ) ) ) {
-						// cancel gesture if no match
-						match = 0;
+							// analyzer value ( between 0 and 1 )
+							ruleMatch = steps[ step ].tracks[ tr ].analyze( fn, args )
+							nrules++			// increment rule counter
+
+							return ruleMatch
+						})
+
+						// add result to lcoal step match counter
+						cmatch += eval( gtracks[ tr ] )
+
+					}
+
+					if (!cmatch) {
+						// single track doesn't match
+						// so, cancel
+						match = 0
 						break
 					}
 
-					// global gesture match counter
-					match += cmatch
+					// add to gesture match points
+					match += cmatch / nrules
 				}
 
 				// if match, save current gesture
@@ -152,7 +169,7 @@
 					// Save gesture
 					matches.push({
 						'name'		: gname
-					,	'points'	: match / nrules
+					,	'points'	: match / ngtracks
 					})
 				}
 

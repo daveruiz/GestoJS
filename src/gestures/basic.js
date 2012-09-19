@@ -10,18 +10,19 @@
 	GestoJS.gesture[ 'doubleLongTap' ]		= [ 'longTap() + longTap()' ]
 	GestoJS.gesture[ 'twoDoubleTap' ]		= [ 'tap() && tap()', 'tap() && tap()' ]
 
-	GestoJS.gesture[ 'swipeLeft' ]			= [ 'swipe(0)' ]
-	GestoJS.gesture[ 'swipeRight' ]			= [ 'swipe(180)' ]
-	GestoJS.gesture[ 'swipeUp' ]			= [ 'swipe(90)' ]
-	GestoJS.gesture[ 'swipeDown' ]			= [ 'swipe(-90)' ]
+	GestoJS.gesture[ 'swipeLeft' ]			= [ 'line(0)' ]
+	GestoJS.gesture[ 'swipeRight' ]			= [ 'line(180)' ]
+	GestoJS.gesture[ 'swipeUp' ]			= [ 'line(90)' ]
+	GestoJS.gesture[ 'swipeDown' ]			= [ 'line(-90)' ]
 
-	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'swipe(0) && swipe(0)' ]
-	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'swipe(180) && swipe(180)' ]
-	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) && swipe(90)' ]
-	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) && swipe(-90)' ]
+	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'line(0) && line(0)' ]
+	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'line(180) && line(180)' ]
+	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'line(90) && line(90)' ]
+	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'line(-90) && line(-90)' ]
 
-	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,90) * loop()' ]
-	GestoJS.gesture[ 'circleRight' ]		= [ 'curve(360,90) * loop()' ]
-	GestoJS.gesture[ 'circleLeft' ]			= [ 'curve(-360,90) * loop()' ]
+	GestoJS.gesture[ 'circle' ]				= [ 'arc(400,90) * circle() || arc(-400,90) * circle()' ]
+	GestoJS.gesture[ 'circleRight' ]		= [ 'arc(400,90) * circle()' ]
+	GestoJS.gesture[ 'circleLeft' ]			= [ 'arc(-400,90) * circle()' ]
+
 
 })( window.GestoJS )
