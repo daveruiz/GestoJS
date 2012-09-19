@@ -20,6 +20,8 @@
 	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) && swipe(90)' ]
 	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) && swipe(-90)' ]
 
-	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,40)' ]
+	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,90) * loop()' ]
+	GestoJS.gesture[ 'circleRight' ]		= [ 'curve(360,90) * loop()' ]
+	GestoJS.gesture[ 'circleLeft' ]			= [ 'curve(-360,90) * loop()' ]
 
 })( window.GestoJS )

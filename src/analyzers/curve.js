@@ -14,4 +14,8 @@
 			 : 0
 	}
 
+	GestoJS.analyzer[ 'loop' ] = function( count ) {
+		return this.loops == ( count || 1 ) ? 1 : 0
+	}
+
 })( window.GestoJS )
