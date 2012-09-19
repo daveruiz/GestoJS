@@ -8,28 +8,21 @@
 	var Utils = {}
 
 	/**
-	 * Get type of event. (still unused)
-	 * @return			{string} type
-	 */
-	Utils.getEventType = function( eventString ) {
-		return eventString.split('.').shift()
-	}
-
-	/**
-	 * Get namespace of event. (still unused)
-	 * @return			{string} namespace
-	 */
-	Utils.getEventNamespace = function( eventString ) {
-		return eventString.split('.').length > 1 ? eventString.split('.').slice(1).join('.') : ''
-	}
-
-	/**
 	 * Detect if device is touchable
-	 * @return			{boolean}
+	 * @return {boolean}
 	 */
 	Utils.isTouchableDevice = function() {
 		return !!('ontouchstart' in window);
 	}
+
+	/**
+	 * Return if something is a function
+	 * @return {boolean}
+	 */
+	Utils.isFunction = function( fn ) {
+		return !!(typeof fn === 'function')
+	}
+
 
 	// Became public
 	GestoJS.util = Utils
@@ -122,13 +115,14 @@
 			,	cmatch
 			,	step
 			,	steps = buildSteps( tracks )
-			,	ntracks
 			,	gname
 			,	gsteps
 			,	gstr
 			,	breakstep
-			,	rule
 			,	nrules
+			,	gtracks
+			,	ngtracks
+			,	tr
 
 			for (gname in gestures) {
 
@@ -141,48 +135,64 @@
 				}
 
 				match = 0	// total gesture match points
-				nrules = 0	// rules counter, for match points normalize
 
 				// Check step by step if gesture matches
 				for (step=0; step<gsteps.length; step++) {
 
 					gstr = gsteps[ step ]	// current step in gesture
-					rule=0					// current rule in step
 					breakstep = false		// if step breaked by unmatched rule
 
+					// group rules in tracks
+					gtracks = gstr.split( /&&/g )
+					ngtracks = gtracks.length
+
 					// if number of tracks expected are different abort current gesture, abort
-					if ( gstr.match( ruleRe ).length !== steps[ step ].tracks.length ) {
+					if ( ngtracks !== steps[ step ].tracks.length ) {
 						match = 0
 						break
 					}
 
-					// Replace each rule by match result
-					gstr = gstr.replace( ruleRe, function( analyzer ) {
-						var fn = analyzer.match( /^([^\(]+)/ )[1]				// rule name
-						,	args = analyzer.match( /\(([^\)]*)/)[1].split(',')	// arguments
-						,	ruleMatch											// rule result
+					// local step match counter
+					cmatch = 0
 
-						// analyzer value ( between 0 and 1 )
-						ruleMatch = steps[ step ].tracks[ rule ].analyze( fn, args )
+					// loop in tracks
+					for (tr=0; tr<ngtracks; tr++) {
 
-						// if not match, mark to break
-						if (!ruleMatch) breakstep = true
+						nrules = 0
 
-						nrules++	// increment rule counter
-						rule++		// next rule
+						// Replace each rule by match result
+						gtracks[ tr ] = gtracks[ tr ].replace( ruleRe, function( analyzer ) {
+							var fn, args, ruleMatch
 
-						return ruleMatch
-					})
+							try {
+								fn = analyzer.match( /^([^\(]+)/ )[1]				// rule name
+								args = analyzer.match( /\(([^\)]*)/)[1].split(',')	// arguments
+							} catch( err ) {
+								GestoJS.err('Parsing error in "' + analyzer + '"')
+								return 0
+							}
 
-					// Evalue step
-					if ( breakstep || !( cmatch = eval( gstr ) ) ) {
-						// cancel gesture if no match
-						match = 0;
+							// analyzer value ( between 0 and 1 )
+							ruleMatch = steps[ step ].tracks[ tr ].analyze( fn, args )
+							nrules++			// increment rule counter
+
+							return ruleMatch
+						})
+
+						// add result to lcoal step match counter
+						cmatch += eval( gtracks[ tr ] )
+
+					}
+
+					if (!cmatch) {
+						// single track doesn't match
+						// so, cancel
+						match = 0
 						break
 					}
 
-					// global gesture match counter
-					match += cmatch
+					// add to gesture match points
+					match += cmatch / nrules
 				}
 
 				// if match, save current gesture
@@ -190,7 +200,7 @@
 					// Save gesture
 					matches.push({
 						'name'		: gname
-					,	'points'	: match / nrules
+					,	'points'	: match / ngtracks
 					})
 				}
 
@@ -260,8 +270,57 @@
 
 	var Track = function( id ) {
 
-		var sumX = 0
+		var track = this
+		,	sumX = 0
 		,	sumY = 0
+		,	lastRot = null
+		,	lastAng = null
+		,	loops = 0
+
+		var updateCalcs = function() {
+			var curRot, curAng
+			,	prevPoint = track.points.length > 1 ? track.points[ Math.max( 0, track.points.length - 2 ) ] : null
+			,	lastPoint = track.points[ track.points.length - 1 ]
+
+			// Speed
+			track.speed = track.length / track.duration * 1000 // px*s
+
+			// Offset
+			track.offset = track.getOffset()
+
+			// Middle point
+			sumX += lastPoint.x
+			sumY += lastPoint.y
+			track.middle = track.getMiddle()
+
+			if ( prevPoint ) {
+				// Length
+				track.length += lastPoint.distanceTo( prevPoint )
+
+				// Rotation
+				curAng = lastPoint.angleTo( prevPoint )
+
+				if (lastAng > 90 && curAng < -90) loops++; // detect clockwise loop
+				if (lastAng < -90 && curAng > 90) loops--; // detect anticlockwise loop
+				curRot = curAng + loops*360
+				if ( lastRot !== null ) track.rotation += curRot - lastRot
+
+				lastRot = curRot
+				lastAng = curAng
+
+				// Loops (offset corrected)
+				track.loops = Math.floor( track.rotation / 360 ) + ( track.rotation < 0 ? 1 : 0 )
+
+				// Angle
+				track.endAngle = track.getAngle( Math.max( 0, track.points.length - 4 ), track.points.length - 1 )
+				track.startAngle = track.getAngle( 0, Math.min( track.points.length - 1, 3 ) )
+
+				// Speed
+				track.endSpeed = track.getSpeed()
+			}
+		}
+
+		/* Public vars */
 
 		this.id = id
 		this.points = []
@@ -269,50 +328,38 @@
 		this.startTime = new Date().getTime()
 		this.endTime = null
 
-		this.duration = null
-		this.speed = null
-		this.endSpeed = null
+		this.duration = 0
+		this.speed = 0
+		this.endSpeed = 0
 		this.length = 0
-		this.rotation = null
-		this.startAngle = null
-		this.endAngle = null
+		this.rotation = 0
+		this.startAngle = 0
+		this.endAngle = 0
 		this.offset = null
 		this.middle = null
+		this.loops = 0
+
+		/* Public methods */
 
 		/**
 		 * Add point. Do not add to points array directly!
 		 * @param point			{Object|GestoJS.core.Point} Point object
 		 */
 		this.push = function( point ) {
+			// Add point
 			this.points.push( point )
-
-			sumX += point.x - this.points[0].x
-			sumY += point.y - this.points[0].y
-
-			if ( this.points.length > 1 )
-				this.length += point.distanceTo( this.points[ this.points.length - 2 ])
+			updateCalcs()
 		}
 
 		/**
 		 * Finalize track, doing some precalcs
 		 */
 		this.end = function() {
-
 			if (this.endTime) return
 
 			// Some ending calcs
 			this.endTime = new Date().getTime()
 			this.duration = this.endTime - this.startTime
-			this.endAngle = this.getAngle( Math.max( 0, this.points.length - 4 ), this.points.length - 1 )
-			this.startAngle = this.getAngle( 0, Math.min( this.points.length - 1, 3 ) )
-			this.offset = this.getOffset()
-			this.middle = this.getMiddle()
-			this.speed = this.length / this.duration * 1000 // px*s
-			this.endSpeed = this.getSpeed()
-
-			// rotational angle calcs
-			this.rotation = this.getRotation()
-
 		}
 
 		/**
@@ -363,34 +410,6 @@
 		}
 
 		/**
-		 * Get rotational angle
-		 * @return				{number} rotation
-		 */
-		this.getRotation = function() {
-			var i, angle = 0, la, ca, loop = 0
-
-			// no angle
-			if (this.points.length <= 2) return 0
-
-			la = this.points[1].angleTo( this.points[0] )
-
-			for (i=2;i<this.points.length;i++) {
-				ca = this.points[ i ].angleTo( this.points[ i-1 ] )
-
-				// -180 to 180 fix
-				// TODO: Improve this for
-				// multiple 'loops' support
-				if (ca < 0 && la > 0) { ca += 360 }
-				if (ca > 0 && la < 0) { ca -= 360 }
-
-				angle += ca - la
-				la = ca
-			}
-
-			return angle
-		}
-
-		/**
 		 * Test track with specified analyzer.
 		 * @param analyzer		{string} Analyzer to test
 		 * @param args			{array} Arguments to pass to the analyzer
@@ -421,7 +440,6 @@
 	Events.ON_TRACK_PROGRESS = "onTrackProgress"
 	Events.ON_TRACK_START = "onTrackStart"
 	Events.ON_TRACK_COMPLETE = "onTrackComplete"
-
 
 	/**
 	 * Event model
@@ -889,6 +907,7 @@
 
 	/* Static vars */
 
+	GestoJS.NAME = "GestoJS"
 	GestoJS.debug = true
 
 	/* Static methods */
@@ -898,8 +917,8 @@
 	 * @param error				{mixed} the error
 	 */
 	GestoJS.err = function( error ) {
-		var args = [ '[GestoJS]' ], i = 0
-		if (GestoJS.debug && typeof window.console.error === 'function') {
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
+		if (GestoJS.debug && GestoJS.util.isFunction( window.console.error )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.error.call( window.console, args.join(' ') )
 		}
@@ -910,8 +929,8 @@
 	 * @param message			{mixed} the error
 	 */
 	GestoJS.log = function( /* many */ ) {
-		var args = [ '[GestoJS]' ], i = 0
-		if (GestoJS.debug && typeof window.console.log === 'function') {
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
+		if (GestoJS.debug && GestoJS.util.isFunction( window.console.log )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.log.call( window.console, args.join(' ') )
 		}
@@ -922,8 +941,8 @@
 	 * @param message			{mixed} the error
 	 */
 	GestoJS.warn = function( message ) {
-		var args = [ '[GestoJS]' ], i = 0
-		if (GestoJS.debug && typeof window.console.warn === 'function') {
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
+		if (GestoJS.debug && typeof GestoJS.util.isFunction( window.console )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.warn.call( window.console, args.join(' ') )
 		}
@@ -962,9 +981,9 @@
 
 (function (GestoJS) {
 
-	GestoJS.analyzer[ 'curve' ] = function( angle, threshold ) {
+	GestoJS.analyzer[ 'arc' ] = function( angle, threshold ) {
 		var a
-		angle = typeof angle !== 'undefined' ? parseFloat( angle ) : null
+		angle = angle !== undefined ? parseFloat( angle ) : null
 		threshold = parseFloat( threshold ) || 30
 
 		return this.rotation >= angle-threshold
@@ -974,23 +993,34 @@
 			 : 0
 	}
 
+	GestoJS.analyzer[ 'circle' ] = function( threshold ) {
+		var i, ii, maxDistance = 0, minDistance = Number.MAX_VALUE
+		threshold = threshold || .8
+		for (i=0,ii=this.points.length;i<ii;i++) {
+			maxDistance = Math.max( maxDistance, this.points[i].distanceTo( this.middle ) )
+			minDistance = Math.min( minDistance, this.points[i].distanceTo( this.middle ) )
+		}
+
+		return Math.max( 0, threshold - (maxDistance - minDistance) / maxDistance )
+	}
+
+	GestoJS.analyzer[ 'loop' ] = function( count ) {
+		return Math.abs( this.loops ) === ( count || 1 ) ? 1 : 0
+	}
+
 })( window.GestoJS )
 /** GestoJS - Linear movements analyzers */
 
 (function (GestoJS) {
 
-	GestoJS.analyzer[ 'swipe' ] = function( angle, threshold ) {
-		var endAngle = this.endAngle
+	GestoJS.analyzer[ 'line' ] = function( angle, threshold ) {
 		angle = parseFloat( angle )
 		threshold = parseFloat( threshold ) || 30
 
-		if (endAngle < -135) endAngle += 360				// fix for swipe right
-															// (-180 to 180 jump)
-
 		return Math.abs( this.rotation ) < 30				// not curve
 			&& this.length > 100							// min length
-			&& endAngle >= angle-threshold					// defined angle
-			&& endAngle <= angle+threshold
+			&& (this.endAngle >= angle-threshold && this.endAngle <= angle+threshold
+				|| this.endAngle+360 >= angle-threshold && this.endAngle+360 <= angle+threshold)
 			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
 	}
 
@@ -1007,16 +1037,21 @@
 	GestoJS.gesture[ 'doubleLongTap' ]		= [ 'longTap() + longTap()' ]
 	GestoJS.gesture[ 'twoDoubleTap' ]		= [ 'tap() && tap()', 'tap() && tap()' ]
 
-	GestoJS.gesture[ 'swipeLeft' ]			= [ 'swipe(0)' ]
-	GestoJS.gesture[ 'swipeRight' ]			= [ 'swipe(180)' ]
-	GestoJS.gesture[ 'swipeUp' ]			= [ 'swipe(90)' ]
-	GestoJS.gesture[ 'swipeDown' ]			= [ 'swipe(-90)' ]
+	GestoJS.gesture[ 'swipeLeft' ]			= [ 'line(0)' ]
+	GestoJS.gesture[ 'swipeRight' ]			= [ 'line(180)' ]
+	GestoJS.gesture[ 'swipeUp' ]			= [ 'line(90)' ]
+	GestoJS.gesture[ 'swipeDown' ]			= [ 'line(-90)' ]
 
-	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'swipe(0) && swipe(0)' ]
-	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'swipe(180) && swipe(180)' ]
-	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'swipe(90) && swipe(90)' ]
-	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'swipe(-90) && swipe(-90)' ]
+	GestoJS.gesture[ 'doubleSwipeLeft' ]	= [ 'line(0) && line(0)' ]
+	GestoJS.gesture[ 'doubleSwipeRight' ]	= [ 'line(180) && line(180)' ]
+	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'line(90) && line(90)' ]
+	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'line(-90) && line(-90)' ]
 
-	GestoJS.gesture[ 'circle' ]				= [ 'curve(360,40)' ]
+	//GestoJS.gesture[ 'zoomIn' ]				= [ 'var a=line(0) && var b=line(180)' ]
+
+	GestoJS.gesture[ 'circle' ]				= [ 'arc(400,90) * circle() || arc(-400,90) * circle()' ]
+	GestoJS.gesture[ 'circleRight' ]		= [ 'arc(400,90) * circle()' ]
+	GestoJS.gesture[ 'circleLeft' ]			= [ 'arc(-400,90) * circle()' ]
+
 
 })( window.GestoJS )
