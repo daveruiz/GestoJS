@@ -103,10 +103,8 @@
 		 * @return				{Object} Offset object
 		 */
 		this.getOffset = function() {
-			return {
-				'x' : this.points[ this.points.length - 1 ].x - this.points[ 0 ].x
-			,	'y' : this.points[ this.points.length - 1 ].y - this.points[ 0 ].y
-			}
+			return new GestoJS.core.Point( this.points[ this.points.length - 1 ].x - this.points[ 0 ].x,
+										   this.points[ this.points.length - 1 ].y - this.points[ 0 ].y )
 		}
 
 		/**
@@ -114,10 +112,7 @@
 		 * @return				{Object} Offset object
 		 */
 		this.getMiddle = function() {
-			return {
-				'x' : sumX / this.points.length
-			,	'y' : sumY / this.points.length
-			}
+			return new GestoJS.core.Point( sumX / this.points.length, sumY / this.points.length )
 		}
 
 		/**

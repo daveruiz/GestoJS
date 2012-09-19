@@ -77,21 +77,21 @@
 		 * @return				{array} Matches found
 		 */
 		this.analyze = function( tracks, gestures ) {
-			var t = 0
-			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi
-			,	matches = []
-			,	match
-			,	cmatch
-			,	step
-			,	steps = buildSteps( tracks )
-			,	gname
-			,	gsteps
-			,	gstr
-			,	breakstep
-			,	nrules
-			,	gtracks
-			,	ngtracks
-			,	tr
+			var gesture									// gesture reference object for analyzers
+			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
+			,	matches = []							// array of matching gestures
+			,	match									// match points counter of current gesture
+			,	smatch									// match points counter of current step
+			,	step									// current step index
+			,	steps = buildSteps( tracks )			// steps of tracks recorded
+			,	gname									// current gesture gesture name
+			,	gsteps									// current gesture steps
+			,	gstr									// current gesture step string to eval
+			,	nrules									// number of rules in current step
+			,	gtracks									// tracks in current gesture step
+			,	ngtracks								// total tracks in current gesture step
+			,	ntracks									// total tracks in current recorded step
+			,	track, trl								// track counter
 
 			for (gname in gestures) {
 
@@ -103,34 +103,42 @@
 					continue
 				}
 
-				match = 0	// total gesture match points
+				match = 0	// reset total gesture match points
 
 				// Check step by step if gesture matches
 				for (step=0; step<gsteps.length; step++) {
 
 					gstr = gsteps[ step ]	// current step in gesture
-					breakstep = false		// if step breaked by unmatched rule
 
 					// group rules in tracks
-					gtracks = gstr.split( /&&/g )
-					ngtracks = gtracks.length
+					gtracks = gstr.split( /&&/g )					// array of && splited rules
+					ngtracks = gtracks.length						// total tracks in rules
+					ntracks = steps[ step ].tracks.length			// total tracks in current step
 
-					// if number of tracks expected are different abort current gesture, abort
-					if ( ngtracks !== steps[ step ].tracks.length ) {
+					if ( ntracks !== ngtracks ) {
+						// tracks recorder are less than tracks required by gestute.
 						match = 0
-						break
+						continue
 					}
 
 					// local step match counter
-					cmatch = 0
+					smatch = 0
 
 					// loop in tracks
-					for (tr=0; tr<ngtracks; tr++) {
+					for (track=0, trl=Math.min(ntracks,ngtracks); track<trl; track++) {
 
 						nrules = 0
 
+						// Gesture reference object for analyzers
+						gesture = {
+							'tracks'				: tracks
+						,	'steps'					: steps
+						,	'step'					: steps[ step ]
+						,	'track'					: steps[ step ].tracks[ track ] // already referenced in analyzers by 'this'
+						}
+
 						// Replace each rule by match result
-						gtracks[ tr ] = gtracks[ tr ].replace( ruleRe, function( analyzer ) {
+						gtracks[ track ] = gtracks[ track ].replace( ruleRe, function( analyzer ) {
 							var fn, args, ruleMatch
 
 							try {
@@ -142,18 +150,18 @@
 							}
 
 							// analyzer value ( between 0 and 1 )
-							ruleMatch = steps[ step ].tracks[ tr ].analyze( fn, args )
+							ruleMatch = steps[ step ].tracks[ track ].analyze( fn, [ gesture ].concat( args ) )
 							nrules++			// increment rule counter
 
 							return ruleMatch
 						})
 
 						// add result to lcoal step match counter
-						cmatch += eval( gtracks[ tr ] )
+						smatch += eval( gtracks[ track ] )
 
 					}
 
-					if (!cmatch) {
+					if (!smatch) {
 						// single track doesn't match
 						// so, cancel
 						match = 0
@@ -161,7 +169,7 @@
 					}
 
 					// add to gesture match points
-					match += cmatch / nrules
+					match += smatch / nrules
 				}
 
 				// if match, save current gesture

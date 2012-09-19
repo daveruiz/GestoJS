@@ -2,7 +2,7 @@
 
 (function (GestoJS) {
 
-	GestoJS.analyzer[ 'line' ] = function( angle, threshold ) {
+	GestoJS.analyzer[ 'line' ] = function( gesture, angle, threshold ) {
 		angle = parseFloat( angle )
 		threshold = parseFloat( threshold ) || 30
 
