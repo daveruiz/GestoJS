@@ -142,7 +142,7 @@
 
 	/* Static vars */
 
-	GestoJS.name = "GestoJS"
+	GestoJS.NAME = "GestoJS"
 	GestoJS.debug = true
 
 	/* Static methods */
@@ -152,7 +152,7 @@
 	 * @param error				{mixed} the error
 	 */
 	GestoJS.err = function( error ) {
-		var args = [ '['+GestoJS.name+']' ], i = 0
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
 		if (GestoJS.debug && GestoJS.util.isFunction( window.console.error )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.error.call( window.console, args.join(' ') )
@@ -164,7 +164,7 @@
 	 * @param message			{mixed} the error
 	 */
 	GestoJS.log = function( /* many */ ) {
-		var args = [ '['+GestoJS.name+']' ], i = 0
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
 		if (GestoJS.debug && GestoJS.util.isFunction( window.console.log )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.log.call( window.console, args.join(' ') )
@@ -176,7 +176,7 @@
 	 * @param message			{mixed} the error
 	 */
 	GestoJS.warn = function( message ) {
-		var args = [ '['+GestoJS.name+']' ], i = 0
+		var args = [ '['+GestoJS.NAME+']' ], i = 0
 		if (GestoJS.debug && typeof GestoJS.util.isFunction( window.console )) {
 			for (;i<arguments.length;i++) args.push( arguments[i] )
 			window.console.warn.call( window.console, args.join(' ') )

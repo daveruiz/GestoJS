@@ -20,6 +20,8 @@
 	GestoJS.gesture[ 'doubleSwipeUp' ]		= [ 'line(90) && line(90)' ]
 	GestoJS.gesture[ 'doubleSwipeDown' ]	= [ 'line(-90) && line(-90)' ]
 
+	//GestoJS.gesture[ 'zoomIn' ]				= [ 'var a=line(0) && var b=line(180)' ]
+
 	GestoJS.gesture[ 'circle' ]				= [ 'arc(400,90) * circle() || arc(-400,90) * circle()' ]
 	GestoJS.gesture[ 'circleRight' ]		= [ 'arc(400,90) * circle()' ]
 	GestoJS.gesture[ 'circleLeft' ]			= [ 'arc(-400,90) * circle()' ]
