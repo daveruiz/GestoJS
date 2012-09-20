@@ -12,6 +12,8 @@
 		,	lastRot = null
 		,	lastAng = null
 		,	loops = 0
+		,	a90 = Math.PI / 2
+		,	a360 = Math.PI * 2
 
 		var updateCalcs = function() {
 			var curRot, curAng
@@ -36,19 +38,19 @@
 				// Rotation
 				curAng = lastPoint.angleTo( prevPoint )
 
-				if (lastAng > 90 && curAng < -90) loops++; // detect clockwise loop
-				if (lastAng < -90 && curAng > 90) loops--; // detect anticlockwise loop
-				curRot = curAng + loops*360
+				if (lastAng >  a90 && curAng < -a90) loops++; // detect clockwise loop
+				if (lastAng < -a90 && curAng > a90) loops--; // detect anticlockwise loop
+				curRot = curAng + loops*a360
 				if ( lastRot !== null ) track.rotation += curRot - lastRot
 
 				lastRot = curRot
 				lastAng = curAng
 
 				// Loops (offset corrected)
-				track.loops = Math.floor( track.rotation / 360 ) + ( track.rotation < 0 ? 1 : 0 )
+				track.loops = Math.floor( track.rotation / a360 ) + ( track.rotation < 0 ? 1 : 0 )
 
 				// Angle
-				track.endAngle = track.getAngle( Math.max( 0, track.points.length - 4 ), track.points.length - 1 )
+				track.endAngle = track.getAngle( Math.max( 0, track.points.length - 4 ), track.points.length - 1  )
 				track.startAngle = track.getAngle( 0, Math.min( track.points.length - 1, 3 ) )
 
 				// Speed

@@ -7,7 +7,7 @@
 
 		if (gesture.step.tracks.length !== 2) return 0	// limit to gestures with 2 tracks
 
-		parallelThreshold = parseFloat( parallelThreshold ) || 45
+		parallelThreshold = parseFloat( parallelThreshold ) / 180 * Math.PI || Math.PI / 4 /* 45º */
 		zoom = parseInt( zoom, 10 )
 		other = gesture.step.tracks[ this === gesture.step.tracks[0] ? 1 : 0 ]
 
@@ -18,7 +18,8 @@
 		radA = this.offset.angle()
 		radB = other.offset.angle()
 
-		return Math.sin( radA )	+ Math.sin( radB ) < Math.PI / 4	// opposite
+		return Math.abs( Math.sin( radA ) + Math.sin( radB )) < Math.PI / 4	// opposite
+			&& Math.abs( Math.cos( radA )	+ Math.cos( radB )) < Math.PI / 4
 			&& distA * zoom > distB * zoom							// in/out
 			&& Math.abs( angleA - angleB ) <= parallelThreshold		// parallels
 			 ? 1 : 0

@@ -143,7 +143,7 @@
 	/* Static vars */
 
 	GestoJS.NAME = "GestoJS"
-	GestoJS.debug = true
+	GestoJS.debug = 1
 
 	/* Static methods */
 

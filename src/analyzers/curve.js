@@ -4,8 +4,8 @@
 
 	GestoJS.analyzer[ 'arc' ] = function( gesture, angle, threshold ) {
 		var a
-		angle = angle !== undefined ? parseFloat( angle ) : null
-		threshold = parseFloat( threshold ) || 30
+		angle = parseFloat( angle ) / 180 * Math.PI
+		threshold = parseFloat( threshold ) / 180 * Math.PI || Math.PI / 6 /* 30º */
 
 		return this.rotation >= angle-threshold
 			&& this.rotation <= angle+threshold

@@ -27,7 +27,7 @@
 		 * @return				{number} Angle in degrees
 		 */
 		this.angleTo = function( point ) {
-			return Math.atan2( point.y - this.y, point.x - this.x ) / Math.PI * 180
+			return Math.atan2( point.y - this.y, point.x - this.x )
 		}
 
 		/**
