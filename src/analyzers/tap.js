@@ -13,7 +13,7 @@
 
 		return this.length < 5							// max length
 			&& this.duration >= minDuration				// defined duration
-			&& this.duration <= maxDuration
+			&& this.duration < maxDuration
 			 ? 1 : 0
 	}
 
