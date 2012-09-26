@@ -8,19 +8,19 @@ Gesture lib for javascript mobile developments
 ```js
 var gesto = new GestoJS();
 
-gesto.addGesture( GestoJS.gestures.swipeLeft )
-gesto.addGesture( GestoJS.gestures.swipeRight )
+gesto.addGesture( GestoJS.gesture.swipeLeft )
+gesto.addGesture( GestoJS.gesture.swipeRight )
 
 gesto.addEventListener( 'onGesture', function( event ) {
   var gesture = event.gestures[0]
   
   switch( gesture ) {
     
-    case GestoJS.gestures.swipeLeft:
+    case GestoJS.gesture.swipeLeft:
       // Do something on swipe left
       break
       
-    case GestoJS.gestures.swipeRight:
+    case GestoJS.gesture.swipeRight:
       // Do something on swipe right
       break
     
