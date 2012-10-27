@@ -2,7 +2,7 @@
 
 (function (GestoJS) {
 
-	/**
+	/*
 	 * Some simple documentation:
 	 *
 	 * Gestures are divided in time steps:

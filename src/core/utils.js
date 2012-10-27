@@ -11,7 +11,12 @@
 	 * @return {boolean}
 	 */
 	Utils.isTouchableDevice = function() {
-		return !!('ontouchstart' in window);
+		// Patch for lastest desktop Chrome. It throws false positive
+		if ( navigator.userAgent.indexOf("Chrome")>-1 &&
+			 !( navigator.userAgent.indexOf("iOS")>-1 || navigator.userAgent.indexOf("Android")>-1 )) return false
+
+		return ('ontouchstart' in window) ||
+			   (window.DocumentTouch && document instanceof DocumentTouch)
 	}
 
 	/**
