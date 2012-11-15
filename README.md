@@ -34,7 +34,7 @@ gesto.addEventListener( 'onGesture', function( event ) {
 
 *v0.2*
 - (*) Live gesture capturing feature
-- Some refactor of gesture managing
+- Gesture managing refactor
 - Updated examples
 
 *v0.1 alpha*
