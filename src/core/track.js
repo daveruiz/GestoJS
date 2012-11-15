@@ -41,7 +41,10 @@
 				if (lastAng >  a90 && curAng < -a90) loops++; // detect clockwise loop
 				if (lastAng < -a90 && curAng > a90) loops--; // detect anticlockwise loop
 				curRot = curAng + loops*a360
-				if ( lastRot !== null ) track.rotation += curRot - lastRot
+				if ( lastRot !== null ) {
+					track.rotation += curRot - lastRot
+					track.absoluteRotation += Math.abs( curRot - lastRot )
+				}
 
 				lastRot = curRot
 				lastAng = curAng
@@ -71,6 +74,7 @@
 		this.endSpeed = 0
 		this.length = 0
 		this.rotation = 0
+		this.absoluteRotation = 0
 		this.startAngle = 0
 		this.endAngle = 0
 		this.offset = null

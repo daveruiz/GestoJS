@@ -11,6 +11,8 @@
 		<script src="../src/core/analyzer.js"></script>
 		<script src="../src/core/tracker.js"></script>
 		<script src="../src/core/track.js"></script>
+		<script src="../src/core/gesture.js"></script>
+		<script src="../src/core/gestureList.js"></script>
 		<script src="../src/core/point.js"></script>
 		<script src="../src/analyzers/curve.js"></script>
 		<script src="../src/analyzers/linear.js"></script>
@@ -28,7 +30,7 @@
 		<canvas id="test"></canvas>
 
 		<script>
-			var gesto = new GestoJS( window, true /* Load all gestures */ )
+			var gesto = new GestoJS( window, false /* Load all gestures */ )
 
 			var gest = document.getElementById( 'logger' )
 			var canvas = document.getElementById( 'test' )
@@ -69,7 +71,6 @@
 
 			gesto.addEventListener( 'onTrackStart', function( event ) {
 				drawing = true
-				gest.innerHTML = '(recording)'
 			})
 			gesto.addEventListener( 'onTrackProgress', function( event ) {
 				if (drawing) drawTracks( event.tracks )
@@ -79,12 +80,23 @@
 				gest.innerHTML = '(not recognized)'
 			})
 
-			gesto.addEventListener( 'onGesture', function( event ) {
-				var gestures = [], i
-				for (i=0; i<event.gestures.length; i++)
-					gestures.push( event.gestures[i].name )
+			var gestureList = new GestoJS.core.GestureList()
 
-				gest.innerHTML = gestures.join(',')
+			// analyze swipe horizontal, rotating and circle gesture
+			gestureList.add( new GestoJS.core.Gesture( 'swipping', 'line(0) || line(180)') )
+			gestureList.add( new GestoJS.core.Gesture( 'rotating', 'circle()') )
+			gestureList.add( 'circle' )
+
+			gesto.addEventListener( 'onProgress', function( event ) {
+				// Capture swipe left or right gesture
+				var gestures = event.analyzeGesture( gestureList ), i, g=[]
+
+				if (gestures) {
+					for (i=0; i<gestures.length; i++) g.push( gestures[i].name )
+					gest.innerHTML = g.join(', ')
+				} else {
+					gest.innerHTML = "(recording)"
+				}
 			})
 		</script>
 

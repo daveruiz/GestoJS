@@ -8,7 +8,7 @@
 
 		var	instance = this
 		,	initialized	= false
-		,	gestures = {}
+		,	gestures = new GestoJS.core.GestureList()
 		,	listeners = {}
 		,	tracker
 		,	analyzer
@@ -28,12 +28,16 @@
 			// Initialize gesture recorder
 			tracker = new GestoJS.core.Tracker( target )
 
-			// Bubbling
+			// Fake bubbling
 			tracker.addListener( GestoJS.event.ON_TRACK_START, dispatch )
+			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
 			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, dispatch )
 			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
 
-			// Analizer
+			// Gesture progress
+			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, progress )
+
+			// Gesture completed
 			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, analyze )
 
 			// Initialize gesture analyzer
@@ -45,7 +49,7 @@
 		}
 
 		/**
-		 * Analyze a tracker event
+		 * Analyze a tracker event on completed gesture
 		 * @param event			{GestoJS.event.Event} Event with tracks data
 		 */
 		var analyze = function( event ) {
@@ -56,9 +60,20 @@
 			if (matches && matches.length) {
 				ev = new GestoJS.event.Event( GestoJS.event.ON_GESTURE )
 				ev.gestures = matches
-
 				dispatch( ev )
 			}
+		}
+
+		/**
+		 * Complete progress event
+		 * @param event			{GestoJS.event.Event} Event with tracks data
+		 */
+		var progress = function( event ) {
+			var ev = new GestoJS.event.Event( GestoJS.event.ON_PROGRESS )
+				ev.tracks = event.tracks
+				ev.analyzer = analyzer
+
+			dispatch( ev )
 		}
 
 		/**
@@ -89,10 +104,7 @@
 		 */
 		this.addGesture = function( name, gestureArray, priority ) {
 			GestoJS.log( 'Listening gesture ', name )
-			gestures[ name ] = {
-				'priority'	: priority || 0
-			,	'gesture'	: gestureArray || GestoJS.gesture[ name ]
-			}
+			gestures.add( new GestoJS.core.Gesture( name, gestureArray || GestoJS.gesture[ name ] ), priority )
 		}
 
 		/**
@@ -100,7 +112,7 @@
 		 * @param name			{string}
 		 */
 		this.removeGesture = function( name ) {
-			delete gestures[ name ]
+			gestures.remove( name )
 		}
 
 		/**

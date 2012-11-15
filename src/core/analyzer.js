@@ -76,7 +76,7 @@
 		 * @param gestures		{array} Array of gestures to search
 		 * @return				{array} Matches found
 		 */
-		this.analyze = function( tracks, gestures ) {
+		this.analyze = function( tracks, gestureList ) {
 			var gesture									// gesture reference object for analyzers
 			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
 			,	matches = []							// array of matching gestures index
@@ -85,7 +85,6 @@
 			,	match									// match points counter of current gesture
 			,	smatch									// match points counter of current step
 			,	tmatch									// match points counter of current track
-			,	gname									// current gesture gesture name
 			,	gsteps									// current gesture steps
 			,	gstr									// current gesture step string to eval
 			,	nrules									// number of rules in current step
@@ -94,10 +93,13 @@
 			,	ntracks									// total tracks in current recorded step
 			,	track, trl								// track counter
 
-			for (gname in gestures) {
+			,	gestures = gestureList.getSorted()		// sorted gesture array
+			,	i, ii
+
+			for (i=0,ii=gestures.length; i<ii; i++) {
 
 				// current gsteps
-				gsteps = gestures[ gname ].gesture
+				gsteps = gestures[ i ].gestureData
 
 				if (gsteps.length !== steps.length) {
 					// Number of steps doesn't match. Not matched gesture
@@ -184,11 +186,14 @@
 					match += smatch / ntracks
 				}
 
+				// For match debugging
+				//console.log( gestures[i].name, match / gsteps.length )
+
 				// if match, save current gesture
 				if (match) {
 					// Save gesture
 					matches.push({
-						'name'		: gname
+						'name'		: gestures[ i ].name
 					,	'points'	: match / gsteps.length
 					})
 				}
@@ -242,7 +247,6 @@
 				}
 			}
 		}
-
 	}
 
 	// Became public

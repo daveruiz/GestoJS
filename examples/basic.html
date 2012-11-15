@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+
+		<script src="../src/gestojs.js"></script>
+		<script src="../src/core/utils.js"></script>
+		<script src="../src/core/event.js"></script>
+		<script src="../src/core/analyzer.js"></script>
+		<script src="../src/core/tracker.js"></script>
+		<script src="../src/core/track.js"></script>
+		<script src="../src/core/gesture.js"></script>
+		<script src="../src/core/gestureList.js"></script>
+		<script src="../src/core/point.js"></script>
+		<script src="../src/analyzers/curve.js"></script>
+		<script src="../src/analyzers/linear.js"></script>
+		<script src="../src/analyzers/tap.js"></script>
+		<script src="../src/analyzers/multitouch.js"></script>
+		<script src="../src/gestures/basic.js"></script>
+
+		<style>
+			html, body { margin:0; padding:0; }
+			#logger { font-size:30px; font-family: Arial; text-align:center; position:absolute; width:100% }
+		</style>
+	</head>
+	<body>
+		<div id="logger"></div>
+		<canvas id="test"></canvas>
+
+		<script>
+			var gesto = new GestoJS( window, true /* Load all gestures */ )
+
+			var gest = document.getElementById( 'logger' )
+			var canvas = document.getElementById( 'test' )
+			var gfx = canvas.getContext("2d")
+			var drawing = false
+			var lx, ly
+			var colors = [ 'black', 'red', 'blue', 'green', 'orange' ]
+
+			canvas.width = window.innerWidth
+			canvas.height = window.innerHeight
+
+			function drawTracks( tracks ) {
+
+				var i, p
+
+				canvas.width = canvas.width // Reset canvas
+
+				for (i=0; i<tracks.length; i++) {
+					gfx.beginPath()
+					gfx.strokeStyle = colors[i]
+					gfx.moveTo( tracks[ i ].points[0].x, tracks[ i ].points[0].y )
+					for (p=1; p<tracks[i].points.length; p++) {
+						gfx.lineTo( tracks[ i ].points[p].x, tracks[ i ].points[p].y )
+					}
+					gfx.stroke()
+
+					// angke draw
+					gfx.beginPath()
+					gfx.strokeStyle = "#ff0000"
+					gfx.moveTo( tracks[ i ].middle.x, tracks[ i ].middle.y )
+					gfx.lineTo( tracks[ i ].middle.x + Math.cos( tracks[ i ].rotation ) * 100
+							  , tracks[ i ].middle.y + Math.sin( tracks[ i ].rotation ) * 100 )
+					gfx.stroke()
+
+				}
+
+			}
+
+			gesto.addEventListener( 'onTrackStart', function( event ) {
+				drawing = true
+				gest.innerHTML = '(recording)'
+			})
+			gesto.addEventListener( 'onTrackProgress', function( event ) {
+				if (drawing) drawTracks( event.tracks )
+			})
+			gesto.addEventListener( 'onTrackComplete', function( event ) {
+				drawing = false
+				gest.innerHTML = '(not recognized)'
+			})
+
+			gesto.addEventListener( 'onGesture', function( event ) {
+				var gestures = [], i
+				for (i=0; i<event.gestures.length; i++)
+					gestures.push( event.gestures[i].name )
+
+				gest.innerHTML = gestures.join(',')
+			})
+		</script>
+
+	</body>
+</html>

@@ -112,7 +112,7 @@
 		 * @param gestures		{array} Array of gestures to search
 		 * @return				{array} Matches found
 		 */
-		this.analyze = function( tracks, gestures ) {
+		this.analyze = function( tracks, gestureList ) {
 			var gesture									// gesture reference object for analyzers
 			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
 			,	matches = []							// array of matching gestures index
@@ -121,7 +121,6 @@
 			,	match									// match points counter of current gesture
 			,	smatch									// match points counter of current step
 			,	tmatch									// match points counter of current track
-			,	gname									// current gesture gesture name
 			,	gsteps									// current gesture steps
 			,	gstr									// current gesture step string to eval
 			,	nrules									// number of rules in current step
@@ -130,10 +129,13 @@
 			,	ntracks									// total tracks in current recorded step
 			,	track, trl								// track counter
 
-			for (gname in gestures) {
+			,	gestures = gestureList.getSorted()		// sorted gesture array
+			,	i, ii
+
+			for (i=0,ii=gestures.length; i<ii; i++) {
 
 				// current gsteps
-				gsteps = gestures[ gname ].gesture
+				gsteps = gestures[ i ].gestureData
 
 				if (gsteps.length !== steps.length) {
 					// Number of steps doesn't match. Not matched gesture
@@ -220,11 +222,14 @@
 					match += smatch / ntracks
 				}
 
+				// For match debugging
+				//console.log( gestures[i].name, match / gsteps.length )
+
 				// if match, save current gesture
 				if (match) {
 					// Save gesture
 					matches.push({
-						'name'		: gname
+						'name'		: gestures[ i ].name
 					,	'points'	: match / gsteps.length
 					})
 				}
@@ -278,7 +283,6 @@
 				}
 			}
 		}
-
 	}
 
 	// Became public
@@ -286,6 +290,32 @@
 
 })( window.GestoJS )
 
+
+/** GestoJS - Events and Event model */
+
+(function( GestoJS ) {
+
+	"use strict"
+
+	/**
+	 * Gesture model
+	 * @param data		{string} gesture data
+	 * @param priority	{int}
+	 */
+	var Gesture = function( name, data, priority ) {
+		this.name = name
+		this.priority = priority || 0
+
+		this.gestureData = []
+
+		if (typeof data === 'string') this.gestureData.push( data )
+		if (data instanceof Array) this.gestureData = data
+	}
+
+	// Became public
+	GestoJS.core.Gesture = Gesture
+
+})( window.GestoJS )
 
 /** GestoJS - Single gesture track model */
 
@@ -330,7 +360,10 @@
 				if (lastAng >  a90 && curAng < -a90) loops++; // detect clockwise loop
 				if (lastAng < -a90 && curAng > a90) loops--; // detect anticlockwise loop
 				curRot = curAng + loops*a360
-				if ( lastRot !== null ) track.rotation += curRot - lastRot
+				if ( lastRot !== null ) {
+					track.rotation += curRot - lastRot
+					track.absoluteRotation += Math.abs( curRot - lastRot )
+				}
 
 				lastRot = curRot
 				lastAng = curAng
@@ -360,6 +393,7 @@
 		this.endSpeed = 0
 		this.length = 0
 		this.rotation = 0
+		this.absoluteRotation = 0
 		this.startAngle = 0
 		this.endAngle = 0
 		this.offset = null
@@ -458,6 +492,7 @@
 	var Events = {}
 
 	Events.ON_GESTURE = "onGesture"
+	Events.ON_PROGRESS = "onProgress"
 
 	Events.ON_TRACK_PROGRESS = "onTrackProgress"
 	Events.ON_TRACK_START = "onTrackStart"
@@ -473,6 +508,24 @@
 		this.originalEvent = null		// store mouse/touch/key event
 		this.gestures = null			// gestures (used only by onGesture event)
 		this.tracks = null				// tracks (used by all track events)
+		this.analyzer = null			// Analyzer instance
+	}
+
+	/**
+	 * Analyze
+	 */
+	Events.Event.prototype.analyzeGesture = function( gestures ) {
+		var gestureList
+		if (!this.analyzer) return null
+
+		if (gestures instanceof GestoJS.core.GestureList) {
+			gestureList = gestures
+		} else {
+			gestureList = new GestoJS.core.GestureList()
+			gestureList.add( gestures )
+		}
+
+		return this.analyzer.analyze( this.tracks, gestureList )
 	}
 
 	// Became public
@@ -801,6 +854,90 @@
 })( window.GestoJS )
 
 
+/** GestoJS - Events and Event model */
+
+(function( GestoJS ) {
+
+	"use strict"
+
+	/**
+	 * GestureList model
+	 */
+	var GestureList = function() {
+		this.list = {}
+	}
+
+	/**
+	 * Add single or multiple gestures to the list
+	 * @param gestures	{mixed} single gesture data string, gesture array or gesture names
+	 * @param priority	{number} priority
+	 */
+	GestureList.prototype.add = function( gestures, priority ) {
+		var i,ii
+
+		// Add single gesture instance
+		if (gestures instanceof GestoJS.core.Gesture) {
+			gestures.priority = priority || gestures.priority || 0
+			this.list[ gestures.name ] = gestures
+		}
+
+		// Allow multiple gestures in single string, separated by comma
+		if (typeof gestures === 'string') {
+			gestures = gestures.split(',')
+		}
+
+		if (gestures instanceof Array) {
+			for (i=0,ii=gestures.length;i<ii;i++) {
+				if ( gestures[i] instanceof GestoJS.core.Gesture ) {
+					// Add gesture instance
+					// Update priority
+					gestures[i].priority = priority || gestures[i].priority || 0
+					// Add directly to list object
+					this.list[ gestures[i].name ] = gestures[i]
+				} else if ( typeof gestures[i] === 'string' && GestoJS.gesture[ gestures[i] ] ) {
+					// Create predefined gesture and add to list object
+					this.list[ gestures[i] ] = new GestoJS.core.Gesture( gestures[i], GestoJS.gesture[ gestures ], priority )
+				} else {
+					// Create custom gesture and add to list object
+					this.list[ 'gesture'+(i+1)	 ] = new GestoJS.core.Gesture( 'gesture'+(i+1), gestures[i].toString(), priority )
+				}
+			}
+		}
+	}
+
+	/**
+	 * Remove gesture from list
+	 * @param name	{string} gesture name
+	 */
+	GestureList.prototype.remove = function( name ) {
+		delete this.list[ name ]
+	}
+
+	/**
+	 * Return sorted gesture arrays
+	 * @return {array}
+	 */
+	GestureList.prototype.getSorted = function() {
+		var sorted = [], i, ii
+
+		// Copy to array
+		for (i in this.list) sorted.push( this.list[i] )
+
+		// Sort by priority
+		sorted.sort( function( a, b ) {
+			if (a.priority > b.priority) return 1
+			if (b.priority > a.priority) return -1
+			return 0
+		})
+
+		return sorted
+	}
+
+	// Became public
+	GestoJS.core.GestureList = GestureList
+
+})( window.GestoJS )
+
 /** GestoJS - Base class */
 
 (function() {
@@ -811,7 +948,7 @@
 
 		var	instance = this
 		,	initialized	= false
-		,	gestures = {}
+		,	gestures = new GestoJS.core.GestureList()
 		,	listeners = {}
 		,	tracker
 		,	analyzer
@@ -831,12 +968,16 @@
 			// Initialize gesture recorder
 			tracker = new GestoJS.core.Tracker( target )
 
-			// Bubbling
+			// Fake bubbling
 			tracker.addListener( GestoJS.event.ON_TRACK_START, dispatch )
+			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
 			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, dispatch )
 			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
 
-			// Analizer
+			// Gesture progress
+			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, progress )
+
+			// Gesture completed
 			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, analyze )
 
 			// Initialize gesture analyzer
@@ -848,7 +989,7 @@
 		}
 
 		/**
-		 * Analyze a tracker event
+		 * Analyze a tracker event on completed gesture
 		 * @param event			{GestoJS.event.Event} Event with tracks data
 		 */
 		var analyze = function( event ) {
@@ -859,9 +1000,20 @@
 			if (matches && matches.length) {
 				ev = new GestoJS.event.Event( GestoJS.event.ON_GESTURE )
 				ev.gestures = matches
-
 				dispatch( ev )
 			}
+		}
+
+		/**
+		 * Complete progress event
+		 * @param event			{GestoJS.event.Event} Event with tracks data
+		 */
+		var progress = function( event ) {
+			var ev = new GestoJS.event.Event( GestoJS.event.ON_PROGRESS )
+				ev.tracks = event.tracks
+				ev.analyzer = analyzer
+
+			dispatch( ev )
 		}
 
 		/**
@@ -892,10 +1044,7 @@
 		 */
 		this.addGesture = function( name, gestureArray, priority ) {
 			GestoJS.log( 'Listening gesture ', name )
-			gestures[ name ] = {
-				'priority'	: priority || 0
-			,	'gesture'	: gestureArray || GestoJS.gesture[ name ]
-			}
+			gestures.add( new GestoJS.core.Gesture( name, gestureArray || GestoJS.gesture[ name ] ), priority )
 		}
 
 		/**
@@ -903,7 +1052,7 @@
 		 * @param name			{string}
 		 */
 		this.removeGesture = function( name ) {
-			delete gestures[ name ]
+			gestures.remove( name )
 		}
 
 		/**
@@ -1087,8 +1236,8 @@
 		angle = parseFloat( angle ) / 180 * Math.PI
 		threshold = parseFloat( threshold ) / 180 * Math.PI || Math.PI / 6 /* 30º */
 
-		return Math.abs( this.rotation ) < Math.PI / 6 /* 30º */	// not curve
-			&& this.length > 5								// min length
+		return this.absoluteRotation < Math.PI / 2 /* 90º */	// not curve
+			&& this.length > 5									// min length
 			&& (this.endAngle >= angle-threshold && this.endAngle <= angle+threshold
 				|| this.endAngle+(Math.PI*2) >= angle-threshold && this.endAngle+(Math.PI*2) <= angle+threshold)
 			 ? 1 - Math.abs( angle - this.endAngle ) / (threshold * 2) : 0
