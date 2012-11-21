@@ -77,25 +77,58 @@
 			})
 			gesto.addEventListener( 'onTrackComplete', function( event ) {
 				drawing = false
-				gest.innerHTML = '(not recognized)'
+				// Clean last locked gesture
+				gesturePoints = {}
+			,	lockedGesture = null
 			})
 
+			/**
+			 * Create gesture list to analyze
+			 */
 			var gestureList = new GestoJS.core.GestureList()
 
-			// analyze swipe horizontal, rotating and circle gesture
-			gestureList.add( new GestoJS.core.Gesture( 'swipping', 'line(0) || line(180)') )
-			gestureList.add( new GestoJS.core.Gesture( 'rotating', 'circle()') )
-			gestureList.add( 'circle' )
+			// analyze swipe horizontal, rotating and circle gesture (custom gestures)
+			gestureList.add( new GestoJS.core.Gesture( 'H swipping', 'line(0) || line(180)') )	// Add horizontal swipping gesture
+			gestureList.add( new GestoJS.core.Gesture( 'V swipping', 'line(90) || line(-90)') )	// Add vertical swipping gesture
+			gestureList.add( new GestoJS.core.Gesture( 'rotating', 'circle()') )				// Add rotating gesture
 
+			var gesturePoints = {} // Used to lock gesture
+			,	lockedGesture = null
 			gesto.addEventListener( 'onProgress', function( event ) {
-				// Capture swipe left or right gesture
-				var gestures = event.analyzeGesture( gestureList ), i, g=[]
+				var gestures, i, g=[]
 
-				if (gestures) {
-					for (i=0; i<gestures.length; i++) g.push( gestures[i].name )
-					gest.innerHTML = g.join(', ')
-				} else {
-					gest.innerHTML = "(recording)"
+				if (!lockedGesture) {
+					gestures = event.analyzeGesture( gestureList )
+
+					if (gestures) {
+						for (i=0; i<gestures.length; i++) {
+							g.push( gestures[i].name )
+							if (i === 0) {
+								gesturePoints[ gestures[i].name ] = (gesturePoints[ gestures[i].name ] || 0) + 1
+								// If a gesture has more than 8 frames, lock it
+								if (gesturePoints[ gestures[i].name ] > 8) {
+									lockedGesture = gestures[i].name
+								}
+							}
+						}
+						gest.innerHTML = g.join(', ')
+					} else {
+						gest.innerHTML = "(recording)"
+					}
+				}
+
+				switch (lockedGesture) {
+					case "H swipping":
+						gest.innerHTML = '[H swipping] ' + event.tracks[0].offset.x + ' px'
+						break;
+
+					case "V swipping":
+						gest.innerHTML = '[V swipping] ' + event.tracks[0].offset.y + ' px'
+						break;
+
+					case "rotating":
+						gest.innerHTML = '[rotation] ' + event.tracks[0].rotation + ' radians'
+						break;
 				}
 			})
 		</script>
