@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=500px, user-scalable=no">
+
+		<script src="../src/gestojs.js"></script>
+		<script src="../src/events/dispatcher.js"></script>
+		<script src="../src/events/event.js"></script>
+		<script src="../src/core/utils.js"></script>
+		<script src="../src/core/analyzer.js"></script>
+		<script src="../src/core/tracker.js"></script>
+		<script src="../src/core/track.js"></script>
+		<script src="../src/core/gesture.js"></script>
+		<script src="../src/core/gestureList.js"></script>
+		<script src="../src/core/point.js"></script>
+		<script src="../src/core/handler.js"></script>
+		<script src="../src/analyzers/curve.js"></script>
+		<script src="../src/analyzers/linear.js"></script>
+		<script src="../src/analyzers/tap.js"></script>
+		<script src="../src/analyzers/multitouch.js"></script>
+		<script src="../src/gestures/basic.js"></script>
+
+		<style>
+			html, body { margin:0; padding:0; font-family:Arial; overflow:hidden }
+			#logger { font-size:30px; font-family: Arial; text-align:center; position:absolute; width:100% }
+			.handler { position:absolute; background:red; width:200px; height:200px; text-align:center; font-size:1.2em; color:#fff; top:50%; margin-left:-100px; margin-top:-100px; }
+			.handler h1, .handler p { margin:0; padding:0; }
+			#handler { left:25%; }
+			#handler2 { left:75%; }
+		</style>
+	</head>
+	<body>
+		<div id="handler" class="handler">
+			<h2>drag, scale or rotate me!</h2>
+			<p>tap = color change</p>
+			<p>two tap = reset</p>
+		</div>
+		<div id="handler2" class="handler">
+			<h2>drag, scale or rotate me!</h2>
+			<p>tap = color change</p>
+			<p>two tap = reset</p>
+		</div>
+
+		<script>
+			function setupHandler( id ) { 
+				var handler = document.getElementById( id )
+				,	gesto = new GestoJS( handler, false )
+				,	colors = [ 'red', 'blue', 'yellow', 'orange', 'purple' ]
+				,	colorIndex = 0
+				,	handlerObject
+					
+				function updateHandler() {
+					// Update properties
+					if (handlerObject) {
+						var transform = "translate("+handlerObject.x+"px, "
+													+handlerObject.y+"px) "
+									  + "scale("+handlerObject.scale+") "
+									  + "rotateZ("+handlerObject.rotation+"rad)"
+
+						handler.style.webkitTransform = transform
+						handler.style.mozTransform = transform
+						handler.style.oTransform = transform
+						handler.style.msTransform = transform
+						handler.style.transform = transform
+					}
+					
+					handler.style.backgroundColor = colors[ colorIndex ]
+				}
+				gesto.addEventListener( 'onProgress', function( event ) {
+					if (!handlerObject) handlerObject = event.getHandler()
+					else handlerObject.update( event.tracks )
+					
+					updateHandler()
+				})
+				
+				gesto.addGesture("tap")
+				gesto.addGesture("twoTap")
+				gesto.addEventListener( 'onGesture', function( event ) {
+					if (event.gestures[0].name === "tap") {
+						colorIndex = ( colorIndex + 1 ) % colors.length
+						updateHandler()
+					}
+					if (event.gestures[0].name === "twoTap") {
+						handlerObject.reset()
+						colorIndex = 0
+						updateHandler()
+					}
+				})
+			}
+			
+			
+			setupHandler( 'handler' )
+			setupHandler( 'handler2' )
+		</script>
+
+	</body>
+</html>

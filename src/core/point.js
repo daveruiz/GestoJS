@@ -40,12 +40,31 @@
 
 		/**
 		 * Return inverted point
-		 * @return				{GestoJS.core.Point}
+		 * @return				{GestoJS.core.Point} 
 		 */
 		this.invert = function() {
 			return new GestoJS.core.Point( -this.x, -this.y, size, force )
 		}
 
+	}
+	
+	/**
+	 * (Static) Get middle point
+	 * @param				{GestoJS.core.Point} a point
+	 * @return				{GestoJS.core.Point} middle point
+	 */
+	Point.middle = function() {
+		var i
+		,	points = arguments
+		,	sumX = points[0].x
+		,	sumY = points[0].y
+		
+		for (i=1; i<points.length; i++) {
+			sumX += points[i].x
+			sumY += points[i].y
+		}
+		
+		return new GestoJS.core.Point( sumX/points.length, sumY/points.length )
 	}
 
 	// Became public

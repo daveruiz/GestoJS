@@ -30,16 +30,16 @@
 			tracker = new GestoJS.core.Tracker( target )
 
 			// Fake bubbling
-			tracker.addListener( GestoJS.event.ON_TRACK_START, dispatch )
-			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
-			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, dispatch )
-			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, dispatch )
+			tracker.addListener( GestoJS.events.ON_TRACK_START, dispatch )
+			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, dispatch )
+			tracker.addListener( GestoJS.events.ON_TRACK_PROGRESS, dispatch )
+			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, dispatch )
 
 			// Gesture progress
-			tracker.addListener( GestoJS.event.ON_TRACK_PROGRESS, progress )
+			tracker.addListener( GestoJS.events.ON_TRACK_PROGRESS, progress )
 
 			// Gesture completed
-			tracker.addListener( GestoJS.event.ON_TRACK_COMPLETE, analyze )
+			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, analyze )
 
 			// Initialize gesture analyzer
 			analyzer = new GestoJS.core.Analyzer()
@@ -51,7 +51,7 @@
 
 		/**
 		 * Analyze a tracker event on completed gesture
-		 * @param event			{GestoJS.event.Event} Event with tracks data
+		 * @param event			{GestoJS.events.Event} Event with tracks data
 		 */
 		var analyze = function( event ) {
 			var matches, ev
@@ -59,7 +59,7 @@
 			matches = analyzer.analyze( event.tracks, gestures )
 
 			if (matches && matches.length) {
-				ev = new GestoJS.event.Event( GestoJS.event.ON_GESTURE )
+				ev = new GestoJS.events.Event( GestoJS.events.ON_GESTURE )
 				ev.gestures = matches
 				dispatch( ev )
 			}
@@ -67,10 +67,10 @@
 
 		/**
 		 * Complete progress event
-		 * @param event			{GestoJS.event.Event} Event with tracks data
+		 * @param event			{GestoJS.events.Event} Event with tracks data
 		 */
 		var progress = function( event ) {
-			var ev = new GestoJS.event.Event( GestoJS.event.ON_PROGRESS )
+			var ev = new GestoJS.events.Event( GestoJS.events.ON_PROGRESS )
 				ev.tracks = event.tracks
 				ev.analyzer = analyzer
 
@@ -79,7 +79,7 @@
 
 		/**
 		 * Dispatch an event
-		 * @param event			{GestoJS.event.Event} Event to dispatch
+		 * @param event			{GestoJS.events.Event} Event to dispatch
 		 */
 		var dispatch = function( event ) {
 			var i
@@ -250,7 +250,7 @@
 
 		/**
 		 * Dispatch an event. (Still unused, waiting for workers)
-		 * @param eventType		{GestoJS.event.Event} Event to dispatch
+		 * @param eventType		{GestoJS.events.Event} Event to dispatch
 		 */
 		var dispatch = function( eventType, data ) {
 			var i=0, event
@@ -258,7 +258,7 @@
 			if ( !listeners[ eventType ] ) return
 
 			// Create event
-			event = new GestoJS.event.Event( eventType )
+			event = new GestoJS.events.Event( eventType )
 
 			for (;i<listeners[ eventType ].length;i++)
 				listeners[ eventType ][ i ].method.call( this, event, listeners[ event ][ i ].data )
@@ -850,7 +850,7 @@
 
 			if ( !tracks.length ) {
 				// Start gesture
-				dispatch( GestoJS.event.ON_TRACK_START, { 'originalEvent' : event } )
+				dispatch( GestoJS.events.ON_TRACK_START, { 'originalEvent' : event } )
 				startFlag = true
 			}
 
@@ -877,7 +877,7 @@
 
 			if ( !startFlag ) {
 				// Not gesture start, dispatch as progress
-				dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+				dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
 			}
 
 		}
@@ -911,7 +911,7 @@
 					tracks[ tracks.length - 1 ].push( new GestoJS.core.Point( event.pageX, event.pageY ) )
 				}
 
-				dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+				dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
 			}
 		}
 
@@ -947,7 +947,7 @@
 						}
 					}
 
-					dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+					dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
 				} else {
 
 					// End current tracks
@@ -972,7 +972,7 @@
 				return 0
 			} )
 
-			dispatch( GestoJS.event.ON_TRACK_COMPLETE, { 'tracks' : tracks, 'originalEvent' : null } );
+			dispatch( GestoJS.events.ON_TRACK_COMPLETE, { 'tracks' : tracks, 'originalEvent' : null } );
 
 			// Reset
 			tracks = []
@@ -993,7 +993,7 @@
 			if ( !listeners[ eventType ] ) return
 
 			// Create event
-			event = new GestoJS.event.Event( eventType )
+			event = new GestoJS.events.Event( eventType )
 			event.tracks = data.tracks
 			event.originalEvent = data.originalEvent
 

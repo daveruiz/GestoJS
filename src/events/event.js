@@ -4,7 +4,7 @@
 
 	"use strict"
 
-	var Events = {}
+	var Events = GestoJS.events
 
 	Events.ON_GESTURE = "onGesture"
 	Events.ON_PROGRESS = "onProgress"
@@ -20,18 +20,19 @@
 	Events.Event = function( type ) {
 		this.timestamp = new Date().getTime()
 		this.type = type
+		this.instance = null			// GestoJS instance
 		this.originalEvent = null		// store mouse/touch/key event
 		this.gestures = null			// gestures (used only by onGesture event)
 		this.tracks = null				// tracks (used by all track events)
-		this.analyzer = null			// Analyzer instance
+		this.sessionData = null			// Data available only in this gesture session
 	}
 
 	/**
-	 * Analyze
+	 * Analyzer
 	 */
 	Events.Event.prototype.analyzeGesture = function( gestures ) {
 		var gestureList
-		if (!this.analyzer) return null
+		,	analyzer = this.instance.__getAnalyzer()
 
 		if (gestures instanceof GestoJS.core.GestureList) {
 			gestureList = gestures
@@ -40,10 +41,17 @@
 			gestureList.add( gestures )
 		}
 
-		return this.analyzer.analyze( this.tracks, gestureList )
+		return analyzer.analyze( this.tracks, gestureList )
 	}
-
-	// Became public
-	GestoJS.event = Events
+	
+	/**
+	 * Handler
+	 */
+	Events.Event.prototype.getHandler = function() {
+		var handler = new GestoJS.core.Handler()
+		handler.listen( this.instance )
+		
+		return handler
+	}
 
 })( window.GestoJS )

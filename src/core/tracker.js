@@ -4,15 +4,15 @@
 
 	"use strict"
 
-	var Tracker = function( target ) {
+	var Tracker = function( instance, target ) {
 
 		var tracker = this
-		,	listeners = {}
 		,	tracks = []
 		,	touches = {}
 		,	touchId = 0
 		,	touchable = GestoJS.util.isTouchableDevice()
 		,	idleTimerId
+		,	currentSession
 
 		/**
 		 * Initialize tracker.
@@ -45,6 +45,7 @@
 			var i=0
 			,	touch
 			,	startFlag
+			,	gestoEvent
 
 			event.preventDefault()
 
@@ -56,7 +57,12 @@
 
 			if ( !tracks.length ) {
 				// Start gesture
-				dispatch( GestoJS.event.ON_TRACK_START, { 'originalEvent' : event } )
+				currentSession = {}
+				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_START )
+				gestoEvent.instance = instance
+				gestoEvent.originalEvent = event
+				gestoEvent.sessionData = currentSession
+				tracker.dispatch( gestoEvent )
 				startFlag = true
 			}
 
@@ -83,7 +89,12 @@
 
 			if ( !startFlag ) {
 				// Not gesture start, dispatch as progress
-				dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+				gestoEvent.instance = instance
+				gestoEvent.tracks = tracks
+				gestoEvent.originalEvent = event
+				gestoEvent.sessionData = currentSession
+				tracker.dispatch( gestoEvent )
 			}
 
 		}
@@ -96,6 +107,8 @@
 
 			var i=0
 			,   touch
+			,	point
+			,	gestoEvent
 
 			if ( tracks.length && !idleTimerId ) {
 				event.preventDefault()
@@ -104,9 +117,10 @@
 
 					for (;i<event.touches.length;i++) {
 						touch = event.touches[ i ]
+						point = new GestoJS.core.Point( touch.pageX, touch.pageY )
 
 						if (tracks[ touches[ touch.identifier ] ]) {
-							tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
+							tracks[ touches[ touch.identifier ] ].push( point )
 						} else {
 							// something went wrong
 							GestoJS.err( "Fixme! Attemp to move unstarted touch !?")
@@ -114,10 +128,17 @@
 					}
 
 				} else {
-					tracks[ tracks.length - 1 ].push( new GestoJS.core.Point( event.pageX, event.pageY ) )
+					point = new GestoJS.core.Point( event.pageX, event.pageY )
+					
+					tracks[ tracks.length - 1 ].push( point )
 				}
 
-				dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+				gestoEvent.instance = instance
+				gestoEvent.tracks = tracks
+				gestoEvent.originalEvent = event
+				gestoEvent.sessionData = currentSession
+				tracker.dispatch( gestoEvent )
 			}
 		}
 
@@ -129,6 +150,7 @@
 
 			var currentTouches = {}
 			,	i=0
+			,	gestoEvent
 
 			if ( tracks.length ) {
 
@@ -153,7 +175,13 @@
 						}
 					}
 
-					dispatch( GestoJS.event.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+					gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+					gestoEvent.instance = instance
+					gestoEvent.tracks = tracks
+					gestoEvent.originalEvent = event
+					gestoEvent.sessionData = currentSession
+					tracker.dispatch( gestoEvent )
+					
 				} else {
 
 					// End current tracks
@@ -169,7 +197,7 @@
 		 * Finalize gesture tracking and send onGesture event
 		 */
 		var finishGesture = function() {
-			var i
+			var gestoEvent
 
 			// Order tracks by startTime
 			tracks.sort( function(a, b) {
@@ -178,7 +206,11 @@
 				return 0
 			} )
 
-			dispatch( GestoJS.event.ON_TRACK_COMPLETE, { 'tracks' : tracks, 'originalEvent' : null } );
+			gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_COMPLETE )
+			gestoEvent.instance = instance
+			gestoEvent.tracks = tracks
+			gestoEvent.sessionData = currentSession
+			tracker.dispatch( gestoEvent )
 
 			// Reset
 			tracks = []
@@ -186,27 +218,7 @@
 			touchId = 0
 			idleTimerId = null
 		}
-
-		/**
-		 * Dispatch an event
-		 * @param eventType			{string} event type
-		 * @param data				{object} event data
-		 */
-		var dispatch = function( eventType, data ) {
-			var i=0
-			,	event
-
-			if ( !listeners[ eventType ] ) return
-
-			// Create event
-			event = new GestoJS.event.Event( eventType )
-			event.tracks = data.tracks
-			event.originalEvent = data.originalEvent
-
-			for (;i<listeners[ eventType ].length;i++)
-				listeners[ eventType ][ i ].method.call( this, event )
-		}
-
+		
 		/*
 		 * Public vars
 		 */
@@ -220,33 +232,8 @@
 		 * Public methods
 		 */
 
-		/**
-		 * Add event listener
-		 * @param event			{string} event type
-		 * @param callback		{function} callback
-		 */
-		this.addListener = function( event, callback ) {
-			if (!listeners[ event ]) listeners[ event ] = []
-			listeners[ event ].push({ 'method' : callback })
-		}
-
-		/**
-		 * Remove event listener
-		 * @param event			{string} event type
-		 * @param callback		{function} callback
-		 */
-		this.removeListener = function( event, callback ) {
-			var i
-			if (!callback) {
-				// Remove all callbacks
-				delete listeners[ event ]
-			} else {
-				for (i=0;i<listeners[ event ];i++) {
-					if (listeners[ event ][ i ].method === callback) {
-						listeners[ event ].splice( i, 1 )
-					}
-				}
-			}
+		this.getTracks = function() {
+			return tracks.slice()
 		}
 
 		// Initialize
@@ -258,7 +245,7 @@
 
 	}
 	// Became public
-	GestoJS.core.Tracker = Tracker
+	GestoJS.core.Tracker = GestoJS.events.EventDispatcher.extend( Tracker )
 
 })( window.GestoJS )
 

@@ -131,7 +131,7 @@
 		 */
 		this.getAngle = function( start, end ) {
 			var i
-			start = start !== undefined ? start : this.points.length - 3
+			start = start !== undefined ? start : Math.max( 0, this.points.length - 3 )
 			end = end !== undefined ? end : this.points.length - 1
 			return this.points[ end ].angleTo( this.points[ start ] )
 		}
@@ -145,6 +145,17 @@
 				   / ( this.points[ this.points.length - 1 ].time - this.points[ Math.max( 0, this.points.length - 2 ) ].time )
 				   / 1000
 		}
+		
+		/** 
+		 * Get a track point
+		 * @param				{int} index. Negative indexes get points from end
+		 * @return				{GestoJS.core.Point}
+		 */
+		this.getPoint = function( index ) {
+			if (index >= 0) return this.points[ index ]
+			else return this.points[ this.points.length + index ]
+		}
+		
 
 		/**
 		 * Test track with specified analyzer.

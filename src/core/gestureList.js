@@ -17,7 +17,7 @@
 	 * @param priority	{number} priority
 	 */
 	GestureList.prototype.add = function( gestures, priority ) {
-		var i,ii
+		var i,ii, parts, subparts
 
 		// Add single gesture instance
 		if (gestures instanceof GestoJS.core.Gesture) {
@@ -27,7 +27,19 @@
 
 		// Allow multiple gestures in single string, separated by comma
 		if (typeof gestures === 'string') {
-			gestures = gestures.split(',')
+			parts = gestures.split(',')
+			gestures = []
+			subparts = []
+			for (i=0; i<parts.length; i++) {
+				if ( parts[i].match(/\)[^\(]$/) ) {
+					// same step
+					subparts.length && gestures.push( subparts.join(',') )
+					subparts = [ parts[i] ]
+				} else {
+					subparts.push( parts[i] )
+				}
+			}
+			gestures.push( subparts.join(',') )
 		}
 
 		if (gestures instanceof Array) {

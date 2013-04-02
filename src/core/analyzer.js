@@ -4,27 +4,10 @@
 
 	"use strict"
 
-	var Analyzer = function() {
+	var Analyzer = function( instance ) {
 
 		var analyzer = this
-		,	listeners = {}
-
-		/**
-		 * Dispatch an event. (Still unused, waiting for workers)
-		 * @param eventType		{GestoJS.event.Event} Event to dispatch
-		 */
-		var dispatch = function( eventType, data ) {
-			var i=0, event
-
-			if ( !listeners[ eventType ] ) return
-
-			// Create event
-			event = new GestoJS.event.Event( eventType )
-
-			for (;i<listeners[ eventType ].length;i++)
-				listeners[ eventType ][ i ].method.call( this, event, listeners[ event ][ i ].data )
-		}
-
+	
 		/**
 		 * Analyze several tracks and separate them in multiple time steps
 		 * @param tracks		{array} Tracks to analyze
@@ -78,7 +61,7 @@
 		 */
 		this.analyze = function( tracks, gestureList ) {
 			var gesture									// gesture reference object for analyzers
-			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
+			,	ruleRe = /[a-z0-9_]+\([^\)]*\)/gi		// Re for rule matching
 			,	matches = []							// array of matching gestures index
 			,	steps = buildSteps( tracks )			// steps of tracks recorded
 			,	step									// current step
@@ -91,7 +74,7 @@
 			,	gtracks									// tracks in current gesture step
 			,	ngtracks								// total tracks in current gesture step
 			,	ntracks									// total tracks in current recorded step
-			,	track, trl								// track counter
+			,	track									// track counter
 
 			,	gestures = gestureList.getSorted()		// sorted gesture array
 			,	i, ii
@@ -215,42 +198,10 @@
 			return null
 
 		}
-
-		/**
-		 * Add an event listener. (Still unused, waiting for workers)
-		 * @param event			{string} Event type
-		 * @param callback		{function}
-		 */
-		this.addListener = function( event, callback ) {
-			if (!listeners[ event ]) listeners[ event ] = []
-			listeners[ event ].push({
-				't' : new Date().getTime()
-			,	'f' : callback
-			})
-		}
-
-		/**
-		 * Remove event listener. (Still unused, waiting for workers)
-		 * @param event			{string} Event type
-		 * @param callback		{function}
-		 */
-		this.removeListener = function( event, callback ) {
-			var i
-			if (!callback) {
-				// Remove all callbacks
-				delete listeners[ event ]
-			} else {
-				for (i=0;i<listeners[ event ];i++) {
-					if (listeners[ event ][ i ].f === callback) {
-						listeners[ event ].splice( i, 1 )
-					}
-				}
-			}
-		}
 	}
 
 	// Became public
-	GestoJS.core.Analyzer = Analyzer
+	GestoJS.core.Analyzer = GestoJS.events.EventDispatcher.extend( Analyzer )
 
 })( window.GestoJS )
 

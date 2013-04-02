@@ -5,6 +5,12 @@ Gesture lib for javascript mobile developments
 
 **Basic usage:**
 
+**Features**
+
+- Multitouch support
+- You can program custom gestures
+- Without dependences
+
 ```js
 var gesto = new GestoJS();
 
@@ -29,8 +35,14 @@ gesto.addEventListener( 'onGesture', function( event ) {
 ```
 
 **Version history:**
-
 (*) New feature
+
+*v0.3*
+- (*) Added handlers! (see example)
+- Refactor of events handling
+- Updated examples
+- Fixed gesture parser
+- Other minor fixes
 
 *v0.2*
 - (*) Live gesture capturing feature
