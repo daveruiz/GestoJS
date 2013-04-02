@@ -5,25 +5,24 @@
 	"use strict"
 
 	function Handler( status ) {
-		
+
 		status = status || {}
-			
+
 		var handler = this
 		,	target = null
 		,	previous = null
-		
+
 		function relocate() {
 			handler.update()
 			previous = new GestoJS.core.Handler( handler )
-			console.log( handler, previous )
 		}
-		
+
 		this.update = function( tracks ) {
-			if (target && !tracks) tracks = target.__getTracks() 
+			if (target && !tracks) tracks = target.__getTracks()
 			if (!tracks || typeof tracks.slice !== 'function') {
 				throw new Error( "First argument must be an array of Track instances" )
 			}
-			
+
 			// clone track array
 			tracks = tracks.slice()
 
@@ -52,39 +51,39 @@
 
 				this.scale = (previous ? previous.scale : 1)
 							  * tracks[0].getPoint(-1).distanceTo( tracks[1].getPoint(-1) )
-							  / tracks[0].getPoint(0).distanceTo( tracks[1].getPoint(0) )					
+							  / tracks[0].getPoint(0).distanceTo( tracks[1].getPoint(0) )
 
 				this.rotation = (previous ? previous.rotation : 0)
-								+ tracks[0].getPoint(-1).angleTo( tracks[1].getPoint(-1) ) 
+								+ tracks[0].getPoint(-1).angleTo( tracks[1].getPoint(-1) )
 								- tracks[0].getPoint(0).angleTo( tracks[1].getPoint(0) )
 			}
-			
+
 		}
-		
+
 		this.listen = function( targetInstance ) {
 			target = targetInstance
 			target.addEventListener( GestoJS.events.ON_TRACK_COMPLETE, relocate )
 		}
-		
+
 		this.reset = function( status ) {
 			status = status || {}
 			previous = null
-			
+
 			this.x = status.x || 0
 			this.y = status.y || 0
 			this.scale = status.scale || 1
 			this.rotation = status.rotation || 0
-		}	
-		
+		}
+
 		this.destroy = function() {
 			// remove listeners
 			target.removeEventListener( GestoJS.events.ON_TRACK_COMPLETE, relocate )
 			this.reset()
 		}
-		
+
 		this.reset( status )
 	}
-	
+
 	// Became public
 	GestoJS.core.Handler = Handler
 

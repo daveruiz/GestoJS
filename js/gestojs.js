@@ -10,9 +10,9 @@
 		var	instance = this
 		,	initialized	= false
 		,	gestures = new GestoJS.core.GestureList()
-		,	listeners = {}
 		,	tracker
 		,	analyzer
+		,	handlers = {}
 
 		/**
 		 * Initialize instance
@@ -27,22 +27,21 @@
 			}
 
 			// Initialize gesture recorder
-			tracker = new GestoJS.core.Tracker( target )
+			tracker = new GestoJS.core.Tracker( instance, target )
 
 			// Fake bubbling
-			tracker.addListener( GestoJS.events.ON_TRACK_START, dispatch )
-			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, dispatch )
-			tracker.addListener( GestoJS.events.ON_TRACK_PROGRESS, dispatch )
-			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, dispatch )
+			tracker.addEventListener( GestoJS.events.ON_TRACK_START, instance.dispatch )
+			tracker.addEventListener( GestoJS.events.ON_TRACK_COMPLETE, instance.dispatch )
+			tracker.addEventListener( GestoJS.events.ON_TRACK_PROGRESS, instance.dispatch )
 
 			// Gesture progress
-			tracker.addListener( GestoJS.events.ON_TRACK_PROGRESS, progress )
+			tracker.addEventListener( GestoJS.events.ON_TRACK_PROGRESS, progress )
 
 			// Gesture completed
-			tracker.addListener( GestoJS.events.ON_TRACK_COMPLETE, analyze )
+			tracker.addEventListener( GestoJS.events.ON_TRACK_COMPLETE, analyze )
 
 			// Initialize gesture analyzer
-			analyzer = new GestoJS.core.Analyzer()
+			analyzer = new GestoJS.core.Analyzer( instance )
 
 			// Autoload all gestures
 			if( autoload ) for (i in GestoJS.gesture) instance.addGesture( i )
@@ -60,8 +59,10 @@
 
 			if (matches && matches.length) {
 				ev = new GestoJS.events.Event( GestoJS.events.ON_GESTURE )
+				ev.instance = instance
+				ev.sessionData = event.sessionData
 				ev.gestures = matches
-				dispatch( ev )
+				instance.dispatch( ev )
 			}
 		}
 
@@ -71,23 +72,13 @@
 		 */
 		var progress = function( event ) {
 			var ev = new GestoJS.events.Event( GestoJS.events.ON_PROGRESS )
+				ev.instance = instance
+				ev.sessionData = event.sessionData
 				ev.tracks = event.tracks
+				ev.activeTracks = event.activeTracks
 				ev.analyzer = analyzer
 
-			dispatch( ev )
-		}
-
-		/**
-		 * Dispatch an event
-		 * @param event			{GestoJS.events.Event} Event to dispatch
-		 */
-		var dispatch = function( event ) {
-			var i
-
-			if (!listeners[ event.type ]) return;
-
-			for (i=0; i<listeners[ event.type ].length; i++)
-				listeners[ event.type ][ i ].call( instance, event )
+			instance.dispatch( ev )
 		}
 
 		/* Public vars and methods */
@@ -115,30 +106,26 @@
 		this.removeGesture = function( name ) {
 			gestures.remove( name )
 		}
-
+		
 		/**
-		 * Add an event listener
-		 * @param type			{string}
-		 * @param callback		{string}
+		 * return current tracks (internal)
 		 */
-		this.addEventListener = function( type, callback ) {
-			if (!listeners[ type ]) listeners[ type ] = []
-			listeners[ type ].push( callback )
-		}
-
+		this.__getTracks = function() {
+			return tracker.getTracks()
+		}	
+		
 		/**
-		 * Remove event listener
-		 * @param type			{string}
-		 * @param callback		{string}
+		 * return analyzer instance (internal)
 		 */
-		this.removeEventListener = function( type, callback ) {
-			var i, newList;
-			if (!listeners[ type ]) return;
-			for (i=0; i<listeners[ type ].length; i++)
-				if (listeners[ type ][ i ] !== callback) newList.push( listeners[ type ][ i ] )
-
-			listeners[ type ] = newList
+		this.__getAnalyzer = function() {
+			return analyzer
 		}
+		
+		// Create dispatcher for events
+		var dispatcher = new GestoJS.events.EventDispatcher()
+		this.addEventListener = dispatcher.addEventListener
+		this.removeEventListener = dispatcher.removeEventListener
+		this.dispatch = dispatcher.dispatch
 
 		/* Initialize */
 		init( target || window )
@@ -149,7 +136,7 @@
 
     GestoJS.core = {}
     GestoJS.util = {}
-    GestoJS.event = {}
+    GestoJS.events = {}
     GestoJS.analyzer = {}
     GestoJS.gesture = {}
 
@@ -195,11 +182,257 @@
 			window.console.warn.call( window.console, args.join(' ') )
 		}
 	}
-
-	// Became public
+	
+	/**
+	 * Simple class extender
+	 */
+	GestoJS.core.Base = function() {}
+	GestoJS.core.Base.extend = function( Clas ) {
+		var result, i, baseClas = this
+				
+		// super
+		result = function SomeClass() {
+			baseClas.apply( this, arguments )
+			Clas.apply( this, arguments )
+		}
+		
+		result._parentClass = baseClas
+		result._originalClass = Clas
+				
+		// Extend prototype
+		for (i in baseClas.prototype) {
+			if (baseClas.prototype.hasOwnProperty(i)) {
+				result.prototype[i] = baseClas.prototype[i]
+			}
+		}
+		for (i in Clas.prototype) {
+			if (Clas.prototype.hasOwnProperty(i)) {
+				result.prototype[i] = Clas.prototype[i]
+			}
+		}
+		
+		// Extend static
+		for (i in baseClas) {
+			if (baseClas.hasOwnProperty(i)) {
+				result[i] = baseClas[i]
+			}
+		}
+		for (i in Clas) {
+			if (Clas.hasOwnProperty(i)) {
+				result[i] = Clas[i]
+			}
+		}
+		
+		return result;
+	}
+	
 	window.GestoJS = GestoJS
 
 })()
+
+
+/** GestoJS - Point model */
+
+(function( GestoJS ) {
+
+	"use strict"
+
+	var EventDispatcher = function() {
+		
+		var listeners = {}
+		
+		/**
+		 * Add an event listener
+		 * @param type			{string}
+		 * @param callback		{string}
+		 */
+		this.addEventListener = function( type, callback ) {
+			if (!listeners[ type ]) listeners[ type ] = []
+			listeners[ type ].push( callback )
+		}
+		
+		/**
+		 * Remove event listener
+		 * @param type			{string}
+		 * @param callback		{string}
+		 */
+		this.removeEventListener = function( type, callback ) {
+			var i, newList;
+			if (!listeners[ type ]) return;
+			for (i=0; i<listeners[ type ].length; i++)
+				if (listeners[ type ][ i ] !== callback) newList.push( listeners[ type ][ i ] )
+
+			listeners[ type ] = newList
+		}
+		
+		/**
+		 * Dispatch an event
+		 * @param event			{GestoJS.events.Event} Event to dispatch
+		 */
+		this.dispatch = function( event ) {
+			var i
+			if (!listeners[ event.type ]) return;
+
+			for (i=0; i<listeners[ event.type ].length; i++)
+				listeners[ event.type ][ i ].call( this, event )	
+		}
+		
+	}
+	
+	// Became public
+	GestoJS.events.EventDispatcher = GestoJS.core.Base.extend( EventDispatcher )
+
+})( window.GestoJS )
+
+
+/** GestoJS - Events and Event model */
+
+(function( GestoJS ) {
+
+	"use strict"
+
+	var Events = GestoJS.events
+
+	Events.ON_GESTURE = "onGesture"
+	Events.ON_PROGRESS = "onProgress"
+
+	Events.ON_TRACK_PROGRESS = "onTrackProgress"
+	Events.ON_TRACK_START = "onTrackStart"
+	Events.ON_TRACK_COMPLETE = "onTrackComplete"
+
+	/**
+	 * Event model
+	 * @param type		{string} event type
+	 */
+	Events.Event = function( type ) {
+		this.timestamp = new Date().getTime()
+		this.type = type
+		this.instance = null			// GestoJS instance
+		this.originalEvent = null		// store mouse/touch/key event
+		this.gestures = null			// gestures (used only by onGesture event)
+		this.tracks = null				// tracks (used by all track events)
+		this.sessionData = null			// Data available only in this gesture session
+	}
+
+	/**
+	 * Analyzer
+	 */
+	Events.Event.prototype.analyzeGesture = function( gestures ) {
+		var gestureList
+		,	analyzer = this.instance.__getAnalyzer()
+
+		if (gestures instanceof GestoJS.core.GestureList) {
+			gestureList = gestures
+		} else {
+			gestureList = new GestoJS.core.GestureList()
+			gestureList.add( gestures )
+		}
+
+		return analyzer.analyze( this.tracks, gestureList )
+	}
+	
+	/**
+	 * Handler
+	 */
+	Events.Event.prototype.getHandler = function() {
+		var handler = new GestoJS.core.Handler()
+		handler.listen( this.instance )
+		
+		return handler
+	}
+
+})( window.GestoJS )
+
+/** GestoJS - Point model */
+
+(function( GestoJS ) {
+
+	"use strict"
+
+	function Handler( status ) {
+
+		status = status || {}
+
+		var handler = this
+		,	target = null
+		,	previous = null
+
+		function relocate() {
+			handler.update()
+			previous = new GestoJS.core.Handler( handler )
+		}
+
+		this.update = function( tracks ) {
+			if (target && !tracks) tracks = target.__getTracks()
+			if (!tracks || typeof tracks.slice !== 'function') {
+				throw new Error( "First argument must be an array of Track instances" )
+			}
+
+			// clone track array
+			tracks = tracks.slice()
+
+			// Put at end active tracks
+			tracks.sort( function( a, b ) {
+				if (a.endTime && !b.endTime) return -1
+				if (!a.endTime && b.endTime) return 1
+				return 0
+			})
+
+			// Get only 2 last tracks
+			tracks = tracks.slice( -2 )
+
+			// Order by startTime
+			tracks.sort( function( a, b ) {
+				if (a.startTime > b.startTime) return 1
+				return -1
+			})
+
+			if (tracks.length === 1) {
+				this.x = (previous ? previous.x : 0) + tracks[0].offset.x
+				this.y = (previous ? previous.y : 0) + tracks[0].offset.y
+			} else if (tracks.length > 1) {
+				this.x = (previous ? previous.x : 0) + (tracks[0].offset.x + tracks[1].offset.x) / 2
+				this.y = (previous ? previous.y : 0) + (tracks[0].offset.y + tracks[1].offset.y) / 2
+
+				this.scale = (previous ? previous.scale : 1)
+							  * tracks[0].getPoint(-1).distanceTo( tracks[1].getPoint(-1) )
+							  / tracks[0].getPoint(0).distanceTo( tracks[1].getPoint(0) )
+
+				this.rotation = (previous ? previous.rotation : 0)
+								+ tracks[0].getPoint(-1).angleTo( tracks[1].getPoint(-1) )
+								- tracks[0].getPoint(0).angleTo( tracks[1].getPoint(0) )
+			}
+
+		}
+
+		this.listen = function( targetInstance ) {
+			target = targetInstance
+			target.addEventListener( GestoJS.events.ON_TRACK_COMPLETE, relocate )
+		}
+
+		this.reset = function( status ) {
+			status = status || {}
+			previous = null
+
+			this.x = status.x || 0
+			this.y = status.y || 0
+			this.scale = status.scale || 1
+			this.rotation = status.rotation || 0
+		}
+
+		this.destroy = function() {
+			// remove listeners
+			target.removeEventListener( GestoJS.events.ON_TRACK_COMPLETE, relocate )
+			this.reset()
+		}
+
+		this.reset( status )
+	}
+
+	// Became public
+	GestoJS.core.Handler = Handler
+
+})( window.GestoJS )
 
 
 /** GestoJS - Utils module */
@@ -243,27 +476,10 @@
 
 	"use strict"
 
-	var Analyzer = function() {
+	var Analyzer = function( instance ) {
 
 		var analyzer = this
-		,	listeners = {}
-
-		/**
-		 * Dispatch an event. (Still unused, waiting for workers)
-		 * @param eventType		{GestoJS.events.Event} Event to dispatch
-		 */
-		var dispatch = function( eventType, data ) {
-			var i=0, event
-
-			if ( !listeners[ eventType ] ) return
-
-			// Create event
-			event = new GestoJS.events.Event( eventType )
-
-			for (;i<listeners[ eventType ].length;i++)
-				listeners[ eventType ][ i ].method.call( this, event, listeners[ event ][ i ].data )
-		}
-
+	
 		/**
 		 * Analyze several tracks and separate them in multiple time steps
 		 * @param tracks		{array} Tracks to analyze
@@ -317,7 +533,7 @@
 		 */
 		this.analyze = function( tracks, gestureList ) {
 			var gesture									// gesture reference object for analyzers
-			,	ruleRe = /[a-z0-9]+\([^\)]*\)/gi		// Re for rule matching
+			,	ruleRe = /[a-z0-9_]+\([^\)]*\)/gi		// Re for rule matching
 			,	matches = []							// array of matching gestures index
 			,	steps = buildSteps( tracks )			// steps of tracks recorded
 			,	step									// current step
@@ -330,7 +546,7 @@
 			,	gtracks									// tracks in current gesture step
 			,	ngtracks								// total tracks in current gesture step
 			,	ntracks									// total tracks in current recorded step
-			,	track, trl								// track counter
+			,	track									// track counter
 
 			,	gestures = gestureList.getSorted()		// sorted gesture array
 			,	i, ii
@@ -454,42 +670,10 @@
 			return null
 
 		}
-
-		/**
-		 * Add an event listener. (Still unused, waiting for workers)
-		 * @param event			{string} Event type
-		 * @param callback		{function}
-		 */
-		this.addListener = function( event, callback ) {
-			if (!listeners[ event ]) listeners[ event ] = []
-			listeners[ event ].push({
-				't' : new Date().getTime()
-			,	'f' : callback
-			})
-		}
-
-		/**
-		 * Remove event listener. (Still unused, waiting for workers)
-		 * @param event			{string} Event type
-		 * @param callback		{function}
-		 */
-		this.removeListener = function( event, callback ) {
-			var i
-			if (!callback) {
-				// Remove all callbacks
-				delete listeners[ event ]
-			} else {
-				for (i=0;i<listeners[ event ];i++) {
-					if (listeners[ event ][ i ].f === callback) {
-						listeners[ event ].splice( i, 1 )
-					}
-				}
-			}
-		}
 	}
 
 	// Became public
-	GestoJS.core.Analyzer = Analyzer
+	GestoJS.core.Analyzer = GestoJS.events.EventDispatcher.extend( Analyzer )
 
 })( window.GestoJS )
 
@@ -653,7 +837,7 @@
 		 */
 		this.getAngle = function( start, end ) {
 			var i
-			start = start !== undefined ? start : this.points.length - 3
+			start = start !== undefined ? start : Math.max( 0, this.points.length - 3 )
 			end = end !== undefined ? end : this.points.length - 1
 			return this.points[ end ].angleTo( this.points[ start ] )
 		}
@@ -667,6 +851,17 @@
 				   / ( this.points[ this.points.length - 1 ].time - this.points[ Math.max( 0, this.points.length - 2 ) ].time )
 				   / 1000
 		}
+		
+		/** 
+		 * Get a track point
+		 * @param				{int} index. Negative indexes get points from end
+		 * @return				{GestoJS.core.Point}
+		 */
+		this.getPoint = function( index ) {
+			if (index >= 0) return this.points[ index ]
+			else return this.points[ this.points.length + index ]
+		}
+		
 
 		/**
 		 * Test track with specified analyzer.
@@ -685,56 +880,6 @@
 
 })( window.GestoJS )
 
-
-/** GestoJS - Events and Event model */
-
-(function( GestoJS ) {
-
-	"use strict"
-
-	var Events = {}
-
-	Events.ON_GESTURE = "onGesture"
-	Events.ON_PROGRESS = "onProgress"
-
-	Events.ON_TRACK_PROGRESS = "onTrackProgress"
-	Events.ON_TRACK_START = "onTrackStart"
-	Events.ON_TRACK_COMPLETE = "onTrackComplete"
-
-	/**
-	 * Event model
-	 * @param type		{string} event type
-	 */
-	Events.Event = function( type ) {
-		this.timestamp = new Date().getTime()
-		this.type = type
-		this.originalEvent = null		// store mouse/touch/key event
-		this.gestures = null			// gestures (used only by onGesture event)
-		this.tracks = null				// tracks (used by all track events)
-		this.analyzer = null			// Analyzer instance
-	}
-
-	/**
-	 * Analyze
-	 */
-	Events.Event.prototype.analyzeGesture = function( gestures ) {
-		var gestureList
-		if (!this.analyzer) return null
-
-		if (gestures instanceof GestoJS.core.GestureList) {
-			gestureList = gestures
-		} else {
-			gestureList = new GestoJS.core.GestureList()
-			gestureList.add( gestures )
-		}
-
-		return this.analyzer.analyze( this.tracks, gestureList )
-	}
-
-	// Became public
-	GestoJS.event = Events
-
-})( window.GestoJS )
 
 /** GestoJS - Point model */
 
@@ -778,12 +923,31 @@
 
 		/**
 		 * Return inverted point
-		 * @return				{GestoJS.core.Point}
+		 * @return				{GestoJS.core.Point} 
 		 */
 		this.invert = function() {
 			return new GestoJS.core.Point( -this.x, -this.y, size, force )
 		}
 
+	}
+	
+	/**
+	 * (Static) Get middle point
+	 * @param				{GestoJS.core.Point} a point
+	 * @return				{GestoJS.core.Point} middle point
+	 */
+	Point.middle = function() {
+		var i
+		,	points = arguments
+		,	sumX = points[0].x
+		,	sumY = points[0].y
+		
+		for (i=1; i<points.length; i++) {
+			sumX += points[i].x
+			sumY += points[i].y
+		}
+		
+		return new GestoJS.core.Point( sumX/points.length, sumY/points.length )
 	}
 
 	// Became public
@@ -798,15 +962,15 @@
 
 	"use strict"
 
-	var Tracker = function( target ) {
+	var Tracker = function( instance, target ) {
 
 		var tracker = this
-		,	listeners = {}
 		,	tracks = []
 		,	touches = {}
 		,	touchId = 0
 		,	touchable = GestoJS.util.isTouchableDevice()
 		,	idleTimerId
+		,	currentSession
 
 		/**
 		 * Initialize tracker.
@@ -836,9 +1000,8 @@
 		 */
 		var startTouch = function( event ) {
 
-			var i=0
-			,	touch
-			,	startFlag
+			var touch
+			,	gestoEvent
 
 			event.preventDefault()
 
@@ -850,35 +1013,44 @@
 
 			if ( !tracks.length ) {
 				// Start gesture
-				dispatch( GestoJS.events.ON_TRACK_START, { 'originalEvent' : event } )
-				startFlag = true
+				currentSession = {}
+				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_START )
+				gestoEvent.instance = instance
+				gestoEvent.originalEvent = event
+				gestoEvent.sessionData = currentSession
+				tracker.dispatch( gestoEvent )
 			}
 
 			if ( touchable ) {
 
-				for (;i<event.touches.length;i++) {
-					touch = event.touches[ i ]
+				// Only get last touch
+				touch = event.touches[ event.touches.length - 1  ]
 
-				    // If no touch active with current identifier
-					// create new touch
-				    if ( touches[ touch.identifier ] === undefined ) {
+				// If no touch active with current identifier
+				// create new touch
+				if ( touches[ touch.identifier ] === undefined ) {
 
-						touches[ touch.identifier ] = touchId++
+					touches[ touch.identifier ] = touchId++
 
-						// New track
-						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
-						tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
-					}
+					// New track
+					tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
+					tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
 				}
+
 			} else {
+
 				tracks.push( new GestoJS.core.Track( tracks.length ) )
 				tracks[ tracks.length - 1 ].push( new GestoJS.core.Point( event.pageX, event.pageY ) )
+
 			}
 
-			if ( !startFlag ) {
-				// Not gesture start, dispatch as progress
-				dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
-			}
+			// Not gesture start, dispatch as progress
+			gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+			gestoEvent.instance = instance
+			gestoEvent.tracks = tracks
+			gestoEvent.originalEvent = event
+			gestoEvent.sessionData = currentSession
+			tracker.dispatch( gestoEvent )
 
 		}
 
@@ -890,6 +1062,9 @@
 
 			var i=0
 			,   touch
+			,	point
+			,	gestoEvent
+			,	isProgress = false
 
 			if ( tracks.length && !idleTimerId ) {
 				event.preventDefault()
@@ -898,20 +1073,32 @@
 
 					for (;i<event.touches.length;i++) {
 						touch = event.touches[ i ]
+						point = new GestoJS.core.Point( touch.pageX, touch.pageY )
 
 						if (tracks[ touches[ touch.identifier ] ]) {
-							tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
+							tracks[ touches[ touch.identifier ] ].push( point )
+							isProgress = true
 						} else {
-							// something went wrong
-							GestoJS.err( "Fixme! Attemp to move unstarted touch !?")
+							// Touch not initialized in this instance, bypass
 						}
 					}
 
 				} else {
-					tracks[ tracks.length - 1 ].push( new GestoJS.core.Point( event.pageX, event.pageY ) )
+
+					point = new GestoJS.core.Point( event.pageX, event.pageY )
+					tracks[ tracks.length - 1 ].push( point )
+					isProgress = true
+
 				}
 
-				dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+				if ( isProgress ) {
+					gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+					gestoEvent.instance = instance
+					gestoEvent.tracks = tracks
+					gestoEvent.originalEvent = event
+					gestoEvent.sessionData = currentSession
+					tracker.dispatch( gestoEvent )
+				}
 			}
 		}
 
@@ -923,6 +1110,7 @@
 
 			var currentTouches = {}
 			,	i=0
+			,	gestoEvent
 
 			if ( tracks.length ) {
 
@@ -947,7 +1135,13 @@
 						}
 					}
 
-					dispatch( GestoJS.events.ON_TRACK_PROGRESS, { 'tracks' : tracks, 'originalEvent' : event } )
+					gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+					gestoEvent.instance = instance
+					gestoEvent.tracks = tracks
+					gestoEvent.originalEvent = event
+					gestoEvent.sessionData = currentSession
+					tracker.dispatch( gestoEvent )
+
 				} else {
 
 					// End current tracks
@@ -963,7 +1157,7 @@
 		 * Finalize gesture tracking and send onGesture event
 		 */
 		var finishGesture = function() {
-			var i
+			var gestoEvent
 
 			// Order tracks by startTime
 			tracks.sort( function(a, b) {
@@ -972,33 +1166,17 @@
 				return 0
 			} )
 
-			dispatch( GestoJS.events.ON_TRACK_COMPLETE, { 'tracks' : tracks, 'originalEvent' : null } );
+			gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_COMPLETE )
+			gestoEvent.instance = instance
+			gestoEvent.tracks = tracks
+			gestoEvent.sessionData = currentSession
+			tracker.dispatch( gestoEvent )
 
 			// Reset
 			tracks = []
 			touches = {}
 			touchId = 0
 			idleTimerId = null
-		}
-
-		/**
-		 * Dispatch an event
-		 * @param eventType			{string} event type
-		 * @param data				{object} event data
-		 */
-		var dispatch = function( eventType, data ) {
-			var i=0
-			,	event
-
-			if ( !listeners[ eventType ] ) return
-
-			// Create event
-			event = new GestoJS.events.Event( eventType )
-			event.tracks = data.tracks
-			event.originalEvent = data.originalEvent
-
-			for (;i<listeners[ eventType ].length;i++)
-				listeners[ eventType ][ i ].method.call( this, event )
 		}
 
 		/*
@@ -1014,33 +1192,8 @@
 		 * Public methods
 		 */
 
-		/**
-		 * Add event listener
-		 * @param event			{string} event type
-		 * @param callback		{function} callback
-		 */
-		this.addListener = function( event, callback ) {
-			if (!listeners[ event ]) listeners[ event ] = []
-			listeners[ event ].push({ 'method' : callback })
-		}
-
-		/**
-		 * Remove event listener
-		 * @param event			{string} event type
-		 * @param callback		{function} callback
-		 */
-		this.removeListener = function( event, callback ) {
-			var i
-			if (!callback) {
-				// Remove all callbacks
-				delete listeners[ event ]
-			} else {
-				for (i=0;i<listeners[ event ];i++) {
-					if (listeners[ event ][ i ].method === callback) {
-						listeners[ event ].splice( i, 1 )
-					}
-				}
-			}
+		this.getTracks = function() {
+			return tracks.slice()
 		}
 
 		// Initialize
@@ -1052,7 +1205,7 @@
 
 	}
 	// Became public
-	GestoJS.core.Tracker = Tracker
+	GestoJS.core.Tracker = GestoJS.events.EventDispatcher.extend( Tracker )
 
 })( window.GestoJS )
 
@@ -1076,7 +1229,7 @@
 	 * @param priority	{number} priority
 	 */
 	GestureList.prototype.add = function( gestures, priority ) {
-		var i,ii
+		var i,ii, parts, subparts
 
 		// Add single gesture instance
 		if (gestures instanceof GestoJS.core.Gesture) {
@@ -1086,7 +1239,19 @@
 
 		// Allow multiple gestures in single string, separated by comma
 		if (typeof gestures === 'string') {
-			gestures = gestures.split(',')
+			parts = gestures.split(',')
+			gestures = []
+			subparts = []
+			for (i=0; i<parts.length; i++) {
+				if ( parts[i].match(/\)[^\(]$/) ) {
+					// same step
+					subparts.length && gestures.push( subparts.join(',') )
+					subparts = [ parts[i] ]
+				} else {
+					subparts.push( parts[i] )
+				}
+			}
+			gestures.push( subparts.join(',') )
 		}
 
 		if (gestures instanceof Array) {

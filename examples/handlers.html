@@ -3,7 +3,7 @@
 	<head>
 		<title></title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<meta name="viewport" content="width=500px, user-scalable=no">
+		<meta name="viewport" content="width=500, user-scalable=no">
 
 		<script src="../src/gestojs.js"></script>
 		<script src="../src/events/dispatcher.js"></script>
@@ -44,13 +44,13 @@
 		</div>
 
 		<script>
-			function setupHandler( id ) { 
+			function setupHandler( id ) {
 				var handler = document.getElementById( id )
 				,	gesto = new GestoJS( handler, false )
 				,	colors = [ 'red', 'blue', 'yellow', 'orange', 'purple' ]
 				,	colorIndex = 0
 				,	handlerObject
-					
+
 				function updateHandler() {
 					// Update properties
 					if (handlerObject) {
@@ -65,16 +65,16 @@
 						handler.style.msTransform = transform
 						handler.style.transform = transform
 					}
-					
+
 					handler.style.backgroundColor = colors[ colorIndex ]
 				}
 				gesto.addEventListener( 'onProgress', function( event ) {
 					if (!handlerObject) handlerObject = event.getHandler()
 					else handlerObject.update( event.tracks )
-					
+
 					updateHandler()
 				})
-				
+
 				gesto.addGesture("tap")
 				gesto.addGesture("twoTap")
 				gesto.addEventListener( 'onGesture', function( event ) {
@@ -89,8 +89,8 @@
 					}
 				})
 			}
-			
-			
+
+
 			setupHandler( 'handler' )
 			setupHandler( 'handler2' )
 		</script>

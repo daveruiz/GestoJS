@@ -42,9 +42,7 @@
 		 */
 		var startTouch = function( event ) {
 
-			var i=0
-			,	touch
-			,	startFlag
+			var touch
 			,	gestoEvent
 
 			event.preventDefault()
@@ -63,39 +61,38 @@
 				gestoEvent.originalEvent = event
 				gestoEvent.sessionData = currentSession
 				tracker.dispatch( gestoEvent )
-				startFlag = true
 			}
 
 			if ( touchable ) {
 
-				for (;i<event.touches.length;i++) {
-					touch = event.touches[ i ]
+				// Only get last touch
+				touch = event.touches[ event.touches.length - 1  ]
 
-				    // If no touch active with current identifier
-					// create new touch
-				    if ( touches[ touch.identifier ] === undefined ) {
+				// If no touch active with current identifier
+				// create new touch
+				if ( touches[ touch.identifier ] === undefined ) {
 
-						touches[ touch.identifier ] = touchId++
+					touches[ touch.identifier ] = touchId++
 
-						// New track
-						tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
-						tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
-					}
+					// New track
+					tracks[ touches[ touch.identifier ] ] = new GestoJS.core.Track( touch.identifier )
+					tracks[ touches[ touch.identifier ] ].push( new GestoJS.core.Point( touch.pageX, touch.pageY ) )
 				}
+
 			} else {
+
 				tracks.push( new GestoJS.core.Track( tracks.length ) )
 				tracks[ tracks.length - 1 ].push( new GestoJS.core.Point( event.pageX, event.pageY ) )
+
 			}
 
-			if ( !startFlag ) {
-				// Not gesture start, dispatch as progress
-				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
-				gestoEvent.instance = instance
-				gestoEvent.tracks = tracks
-				gestoEvent.originalEvent = event
-				gestoEvent.sessionData = currentSession
-				tracker.dispatch( gestoEvent )
-			}
+			// Not gesture start, dispatch as progress
+			gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+			gestoEvent.instance = instance
+			gestoEvent.tracks = tracks
+			gestoEvent.originalEvent = event
+			gestoEvent.sessionData = currentSession
+			tracker.dispatch( gestoEvent )
 
 		}
 
@@ -109,6 +106,7 @@
 			,   touch
 			,	point
 			,	gestoEvent
+			,	isProgress = false
 
 			if ( tracks.length && !idleTimerId ) {
 				event.preventDefault()
@@ -121,24 +119,28 @@
 
 						if (tracks[ touches[ touch.identifier ] ]) {
 							tracks[ touches[ touch.identifier ] ].push( point )
+							isProgress = true
 						} else {
-							// something went wrong
-							GestoJS.err( "Fixme! Attemp to move unstarted touch !?")
+							// Touch not initialized in this instance, bypass
 						}
 					}
 
 				} else {
+
 					point = new GestoJS.core.Point( event.pageX, event.pageY )
-					
 					tracks[ tracks.length - 1 ].push( point )
+					isProgress = true
+
 				}
 
-				gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
-				gestoEvent.instance = instance
-				gestoEvent.tracks = tracks
-				gestoEvent.originalEvent = event
-				gestoEvent.sessionData = currentSession
-				tracker.dispatch( gestoEvent )
+				if ( isProgress ) {
+					gestoEvent = new GestoJS.events.Event( GestoJS.events.ON_TRACK_PROGRESS )
+					gestoEvent.instance = instance
+					gestoEvent.tracks = tracks
+					gestoEvent.originalEvent = event
+					gestoEvent.sessionData = currentSession
+					tracker.dispatch( gestoEvent )
+				}
 			}
 		}
 
@@ -181,7 +183,7 @@
 					gestoEvent.originalEvent = event
 					gestoEvent.sessionData = currentSession
 					tracker.dispatch( gestoEvent )
-					
+
 				} else {
 
 					// End current tracks
@@ -218,7 +220,7 @@
 			touchId = 0
 			idleTimerId = null
 		}
-		
+
 		/*
 		 * Public vars
 		 */
