@@ -3,13 +3,13 @@ GestoJS
 
 Gesture lib for javascript mobile developments
 
-**Basic usage:**
-
 **Features**
 
 - Multitouch support
 - You can program custom gestures
 - Without dependences
+
+**Basic usage:**
 
 ```js
 var gesto = new GestoJS();
